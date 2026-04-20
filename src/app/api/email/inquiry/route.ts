@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { resend, FROM } from '@/lib/email/client'
+import { getResend, FROM } from '@/lib/email/client'
 import { newInquirySubject, newInquiryHtml } from '@/lib/email/templates/newInquiry'
 
 const supabaseAdmin = createClient(
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const ctaUrl = `${appUrl}/creative/messages`
 
-  const { error: emailError } = await resend.emails.send({
+  const { error: emailError } = await getResend().emails.send({
     from: FROM,
     to: recipientEmail,
     subject: newInquirySubject(founderProfile?.full_name ?? 'A founder'),

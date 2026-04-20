@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { resend, FROM } from '@/lib/email/client'
+import { getResend, FROM } from '@/lib/email/client'
 import { reviewDecisionSubject, reviewDecisionHtml } from '@/lib/email/templates/reviewDecision'
 
 const supabaseAdmin = createClient(
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL}/login`
     const creativeName = creativeProfile?.full_name?.split(' ')[0] ?? 'there'
 
-    const { error: emailError } = await resend.emails.send({
+    const { error: emailError } = await getResend().emails.send({
       from: FROM,
       to: recipientEmail,
       subject: reviewDecisionSubject(status),

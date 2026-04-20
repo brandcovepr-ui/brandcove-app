@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { resend, FROM } from '@/lib/email/client'
+import { getResend, FROM } from '@/lib/email/client'
 import {
   offerAcceptedSubject,
   offerDeclinedSubject,
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     ctaUrl,
   })
 
-  const { error: emailError } = await resend.emails.send({
+  const { error: emailError } = await getResend().emails.send({
     from: FROM,
     to: recipientEmail,
     subject,
