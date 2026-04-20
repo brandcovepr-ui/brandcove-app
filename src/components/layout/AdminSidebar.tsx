@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LayoutDashboard, LogOut, X } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQueryClient } from '@tanstack/react-query'
@@ -23,10 +23,19 @@ export function AdminSidebar({ onNavClick }: { onNavClick?: () => void }) {
   ]
 
   return (
-    <aside className="w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
-      <div className="px-4 py-5 border-b border-gray-50">
-        <span className="font-bold text-sm tracking-widest text-gray-900 uppercase">BRANDCOVE</span>
-        <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider">Admin</p>
+    <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
+      <div className="px-4 py-5 border-b border-gray-50 flex items-center justify-between">
+        <div>
+          <span className="font-bold text-sm tracking-widest text-gray-900 uppercase">BRANDCOVE</span>
+          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider">Admin</p>
+        </div>
+        <button
+          onClick={onNavClick}
+          className="md:hidden p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"
+          aria-label="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

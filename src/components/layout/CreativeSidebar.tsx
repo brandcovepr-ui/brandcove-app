@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, MessageSquare, User, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, MessageSquare, User, Settings, LogOut, X } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -95,10 +95,17 @@ export function CreativeSidebar({ onNavClick }: { onNavClick?: () => void }) {
   }
 
   return (
-    <aside className="w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
-      {/* Logo */}
-      <div className="px-4 py-5">
-        <span className="text-4xl text-sm  font-bold font-editorial font-sans tracking-widest text-gray-900 uppercase" style={{ fontFamily: 'var(--font-editorial)' }}>BRANDCOVE</span>
+    <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
+      {/* Logo + mobile close */}
+      <div className="px-4 py-5 flex items-center justify-between">
+        <span className="font-bold text-sm tracking-widest text-gray-900 uppercase">BRANDCOVE</span>
+        <button
+          onClick={onNavClick}
+          className="md:hidden p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"
+          aria-label="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
