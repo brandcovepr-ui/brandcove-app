@@ -1,29 +1,6 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Poppins, DM_Serif_Display } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const poppins = Poppins({
-  variable: '--font-poppins',
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-})
-
-const dmSerifDisplay = DM_Serif_Display({
-  variable: '--font-editorial',
-  subsets: ['latin'],
-  weight: ['400'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
 
 export const metadata: Metadata = {
   title: 'BrandCove — Connect Founders with Creatives',
@@ -36,7 +13,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} ${dmSerifDisplay.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&family=Poppins:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>

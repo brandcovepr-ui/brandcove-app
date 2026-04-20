@@ -61,6 +61,13 @@
 }
 
 :root {
+  /* Font family variables (populated at runtime via Google Fonts link tag) */
+  --font-geist-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-poppins: 'Poppins', ui-sans-serif, sans-serif;
+  --font-editorial: 'DM Serif Display', ui-serif, Georgia, serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

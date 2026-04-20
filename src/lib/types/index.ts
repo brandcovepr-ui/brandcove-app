@@ -1,4 +1,4 @@
-export type UserRole = 'founder' | 'creative'
+export type UserRole = 'founder' | 'creative' | 'admin'
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'grace_period'
 

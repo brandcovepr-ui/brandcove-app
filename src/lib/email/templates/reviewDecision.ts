@@ -6,7 +6,7 @@ interface ReviewDecisionParams {
 
 export function reviewDecisionSubject(status: 'approved' | 'rejected') {
   return status === 'approved'
-    ? 'You've been approved on BrandCove 🎉'
+    ? `You've been approved on BrandCove 🎉`
     : 'Your BrandCove application update'
 }
 
