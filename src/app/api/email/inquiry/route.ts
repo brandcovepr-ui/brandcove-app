@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { getResend, FROM } from '@/lib/email/client'
 import { newInquirySubject, newInquiryHtml } from '@/lib/email/templates/newInquiry'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * POST /api/email/inquiry
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch inquiry with founder + creative profiles
-  const { data: inquiry, error: inquiryError } = await supabaseAdmin
+  const { data: inquiry, error: inquiryError } = await getSupabaseAdmin()
     .from('inquiries')
     .select('id, project_description, timeline, budget, founder_id, creative_id')
     .eq('id', inquiry_id)
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch names
-  const { data: profiles } = await supabaseAdmin
+  const { data: profiles } = await getSupabaseAdmin()
     .from('profiles')
     .select('id, full_name')
     .in('id', [inquiry.founder_id, inquiry.creative_id])
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
   const creativeProfile = profiles?.find((p) => p.id === inquiry.creative_id)
 
   // Get creative's email via admin auth API
-  const { data: creativeAuth } = await supabaseAdmin.auth.admin.getUserById(inquiry.creative_id)
+  const { data: creativeAuth } = await getSupabaseAdmin().auth.admin.getUserById(inquiry.creative_id)
 
   const recipientEmail = creativeAuth?.user?.email
   if (!recipientEmail) {

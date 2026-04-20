@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { getResend, FROM } from '@/lib/email/client'
 import { reviewDecisionSubject, reviewDecisionHtml } from '@/lib/email/templates/reviewDecision'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * POST /api/admin/review
@@ -29,12 +31,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: { user: caller }, error: callerError } = await supabaseAdmin.auth.getUser(callerToken)
+  const { data: { user: caller }, error: callerError } = await getSupabaseAdmin().auth.getUser(callerToken)
   if (callerError || !caller) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: callerProfile } = await supabaseAdmin
+  const { data: callerProfile } = await getSupabaseAdmin()
     .from('profiles')
     .select('role')
     .eq('id', caller.id)
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Update review_status
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await getSupabaseAdmin()
     .from('profiles')
     .update({ review_status: status })
     .eq('id', creative_id)
@@ -55,10 +57,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Get creative's email + name
-  const { data: creativeAuth } = await supabaseAdmin.auth.admin.getUserById(creative_id)
+  const { data: creativeAuth } = await getSupabaseAdmin().auth.admin.getUserById(creative_id)
   const recipientEmail = creativeAuth?.user?.email
 
-  const { data: creativeProfile } = await supabaseAdmin
+  const { data: creativeProfile } = await getSupabaseAdmin()
     .from('profiles')
     .select('full_name')
     .eq('id', creative_id)

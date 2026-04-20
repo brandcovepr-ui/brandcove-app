@@ -3,10 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { getResend, FROM } from '@/lib/email/client'
 import { newMessageSubject, newMessageHtml } from '@/lib/email/templates/newMessage'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * POST /api/email/message
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Fetch inquiry to find both parties
-  const { data: inquiry, error: inquiryError } = await supabaseAdmin
+  const { data: inquiry, error: inquiryError } = await getSupabaseAdmin()
     .from('inquiries')
     .select('id, founder_id, creative_id')
     .eq('id', inquiry_id)
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     sender_id === inquiry.founder_id ? inquiry.creative_id : inquiry.founder_id
 
   // Fetch names for both parties
-  const { data: profiles } = await supabaseAdmin
+  const { data: profiles } = await getSupabaseAdmin()
     .from('profiles')
     .select('id, full_name')
     .in('id', [sender_id, recipientId])
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
   const recipientProfile = profiles?.find((p) => p.id === recipientId)
 
   // Get recipient's email via admin auth API
-  const { data: recipientAuth } = await supabaseAdmin.auth.admin.getUserById(recipientId)
+  const { data: recipientAuth } = await getSupabaseAdmin().auth.admin.getUserById(recipientId)
 
   const recipientEmail = recipientAuth?.user?.email
   if (!recipientEmail) {

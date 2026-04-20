@@ -7,10 +7,12 @@ import {
   offerActionHtml,
 } from '@/lib/email/templates/offerAction'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 /**
  * POST /api/email/offer
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
-  const { data: inquiry } = await supabaseAdmin
+  const { data: inquiry } = await getSupabaseAdmin()
     .from('inquiries')
     .select('id, project_description, founder_id, creative_id')
     .eq('id', inquiry_id)
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 })
   }
 
-  const { data: profiles } = await supabaseAdmin
+  const { data: profiles } = await getSupabaseAdmin()
     .from('profiles')
     .select('id, full_name')
     .in('id', [inquiry.founder_id, inquiry.creative_id])
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
   const founderProfile = profiles?.find((p) => p.id === inquiry.founder_id)
   const creativeProfile = profiles?.find((p) => p.id === inquiry.creative_id)
 
-  const { data: founderAuth } = await supabaseAdmin.auth.admin.getUserById(inquiry.founder_id)
+  const { data: founderAuth } = await getSupabaseAdmin().auth.admin.getUserById(inquiry.founder_id)
   const recipientEmail = founderAuth?.user?.email
 
   if (!recipientEmail) {
