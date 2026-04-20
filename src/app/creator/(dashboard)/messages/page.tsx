@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow, format } from 'date-fns'
-import { ArrowLeft, ChevronRight, Globe, Send, MessageSquare, Lock } from 'lucide-react'
+import { ChevronRight, Globe, Send, MessageSquare, Lock } from 'lucide-react'
 import { markInquiryAsRead } from '@/lib/utils/readState'
 import { computeChatAccess } from '@/lib/chat-access'
 
@@ -51,6 +51,10 @@ export default function CreatorInquiriesPage() {
   const [declining, setDeclining] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [decliningOffer, setDecliningOffer] = useState(false)
+  const [confirmModal, setConfirmModal] = useState<{
+    type: 'accept' | 'decline' | 'accept_offer' | 'decline_offer'
+    offerId?: string
+  } | null>(null)
   const threadBottomRef = useRef<HTMLDivElement>(null)
 
   const { data: inquiries = [], isLoading } = useQuery({
@@ -140,49 +144,56 @@ export default function CreatorInquiriesPage() {
     queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
   }
 
-  async function declineInquiry() {
-    if (!selectedId || !profile) return
-    setDeclining(true)
+  async function confirmAction() {
+    if (!confirmModal || !selectedId || !profile) return
     const supabase = createClient()
-    await supabase.from('inquiries').update({ status: 'declined' }).eq('id', selectedId)
-    setDeclining(false)
-    queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-    setSelectedId(null)
+
+    if (confirmModal.type === 'accept') {
+      setAccepting(true)
+      setConfirmModal(null)
+      await supabase.from('inquiries').update({ status: 'hired' }).eq('id', selectedId)
+      setAccepting(false)
+      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+    }
+
+    if (confirmModal.type === 'decline') {
+      setDeclining(true)
+      setConfirmModal(null)
+      await supabase.from('inquiries').update({ status: 'declined' }).eq('id', selectedId)
+      setDeclining(false)
+      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+      setSelectedId(null)
+    }
+
+    if (confirmModal.type === 'accept_offer' && confirmModal.offerId) {
+      setAccepting(true)
+      setConfirmModal(null)
+      await supabase.from('offers').update({ status: 'accepted' }).eq('id', confirmModal.offerId)
+      await supabase.from('inquiries').update({ status: 'accepted' }).eq('id', selectedId)
+      fetch('/api/email/offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry_id: selectedId, action: 'accepted' }),
+      }).catch(() => {})
+      setAccepting(false)
+      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+    }
+
+    if (confirmModal.type === 'decline_offer' && confirmModal.offerId) {
+      setDecliningOffer(true)
+      setConfirmModal(null)
+      await createClient().from('offers').update({ status: 'declined' }).eq('id', confirmModal.offerId)
+      fetch('/api/email/offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry_id: selectedId, action: 'declined' }),
+      }).catch(() => {})
+      setDecliningOffer(false)
+      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+    }
   }
 
-  async function declineOffer(offerId: string) {
-    if (!profile || !selectedId) return
-    const confirmed = window.confirm(
-      'Declining this offer will close the chat.\nThe founder will need to send a new offer to reopen it.'
-    )
-    if (!confirmed) return
-    setDecliningOffer(true)
-    const supabase = createClient()
-    await supabase.from('offers').update({ status: 'declined' }).eq('id', offerId)
-    fetch('/api/email/offer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inquiry_id: selectedId, action: 'declined' }),
-    }).catch(() => {})
-    setDecliningOffer(false)
-    queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-  }
-
-  async function acceptOffer(offerId: string) {
-    if (!profile || !selectedId) return
-    setAccepting(true)
-    const supabase = createClient()
-    await supabase.from('offers').update({ status: 'accepted' }).eq('id', offerId)
-    await supabase.from('inquiries').update({ status: 'accepted' }).eq('id', selectedId)
-    fetch('/api/email/offer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inquiry_id: selectedId, action: 'accepted' }),
-    }).catch(() => {})
-    setAccepting(false)
-    queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-  }
-
+  // ── Chat / detail view ─────────────────────────────────────────────────────
   if (selectedId && selected) {
     const founder = selected.founder as any
     const fp = Array.isArray(founder?.founder_profiles) ? founder.founder_profiles[0] : founder?.founder_profiles
@@ -213,61 +224,72 @@ export default function CreatorInquiriesPage() {
 
     return (
       <div className="flex flex-col h-full min-h-0">
-        <div className="bg-white border-b border-gray-100 px-4 md:px-8 py-4 shrink-0">
-          <button
-            onClick={() => setSelectedId(null)}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 mb-3 transition-colors group"
-          >
-            <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>Inquiries</span>
-            <ChevronRight size={12} />
-            <span className="text-gray-600 font-medium truncate max-w-[180px]">
+
+        {/* ── Persistent header: breadcrumb ── */}
+        <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedId(null)}
+              className="font-editorial text-2xl text-gray-400 hover:text-gray-700 transition-colors leading-none"
+            >
+              Inquiries
+            </button>
+            <ChevronRight size={16} className="text-gray-300 shrink-0" />
+            <span className="font-editorial text-2xl text-gray-900 leading-none truncate">
               {companyName || founderName}
             </span>
-          </button>
+          </div>
+        </div>
 
+        {/* ── "Wants to work with you" + action buttons (no bg, blends) ── */}
+        <div className="px-4 md:px-8 py-4 shrink-0">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
-                {companyName ? (
-                  <>
-                    <span>{companyName}</span>
-                    <span className="text-gray-400 font-normal text-base"> · {founderName}</span>
-                  </>
-                ) : (
-                  founderName
-                )}{' '}
-                wants to work with you.
-              </h1>
-            </div>
+            <h2 className="text-lg font-bold text-gray-900 leading-snug">
+              {companyName ? (
+                <>
+                  <span>{companyName}</span>
+                  <span className="text-gray-400 font-normal text-base"> · {founderName}</span>
+                </>
+              ) : founderName}{' '}
+              wants to work with you.
+            </h2>
 
             <div className="flex items-center gap-2 shrink-0">
               {hasPendingOffer && !isDeclined && !isAccepted && (
                 <>
                   <button
-                    onClick={() => acceptOffer(offer.id)}
+                    onClick={() => setConfirmModal({ type: 'accept_offer', offerId: offer.id })}
                     disabled={accepting}
-                    className="bg-[#6b1d2b] text-white text-xs md:text-sm font-medium px-3 md:px-5 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50 whitespace-nowrap"
+                    className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {accepting ? 'Accepting…' : 'Accept Offer'}
                   </button>
                   <button
-                    onClick={() => declineOffer(offer.id)}
+                    onClick={() => setConfirmModal({ type: 'decline_offer', offerId: offer.id })}
                     disabled={decliningOffer}
-                    className="text-xs md:text-sm font-medium text-gray-600 border border-gray-300 px-3 md:px-5 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 whitespace-nowrap"
+                    className="text-xs font-medium text-gray-600 border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {decliningOffer ? 'Declining…' : 'Decline Offer'}
                   </button>
                 </>
               )}
               {!hasPendingOffer && !isDeclined && !isAccepted && !isCancelled && (
-                <button
-                  onClick={declineInquiry}
-                  disabled={declining}
-                  className="text-xs md:text-sm font-medium text-gray-600 border border-gray-300 px-3 md:px-5 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
-                >
-                  {declining ? 'Declining…' : 'Decline'}
-                </button>
+                <>
+                  <button
+                    onClick={() => setConfirmModal({ type: 'accept' })}
+                    disabled={accepting}
+                    className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {accepting ? 'Accepting…' : 'Accept'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmModal({ type: 'decline' })}
+                    disabled={declining}
+                    className="text-xs font-medium text-gray-600 border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  >
+                    {declining ? 'Declining…' : 'Decline'}
+                  </button>
+                </>
               )}
               {isAccepted && (
                 <span className="text-xs font-medium text-green-600 bg-green-50 border border-green-100 px-4 py-2 rounded-full whitespace-nowrap">
@@ -288,9 +310,11 @@ export default function CreatorInquiriesPage() {
           </div>
         </div>
 
+        {/* ── Body: chat + sidebar ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 space-y-4">
+              {/* Original inquiry card */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -339,6 +363,7 @@ export default function CreatorInquiriesPage() {
               <div ref={threadBottomRef} />
             </div>
 
+            {/* Reply input */}
             <div className="shrink-0 bg-white border-t border-gray-100 px-4 md:px-8 py-4">
               {chatAccess.isOpen ? (
                 <>
@@ -377,6 +402,7 @@ export default function CreatorInquiriesPage() {
             </div>
           </div>
 
+          {/* Right sidebar */}
           <div
             className="hidden md:flex w-56 lg:w-64 shrink-0 border-l border-gray-100 flex-col overflow-y-auto p-6 space-y-6"
             style={{ background: '#EFE9E2' }}
@@ -442,10 +468,72 @@ export default function CreatorInquiriesPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Confirmation modal ── */}
+        {confirmModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+              {confirmModal.type === 'accept' && (
+                <>
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">Accept this inquiry?</h2>
+                  <p className="text-sm text-gray-500 mb-6">
+                    This will open a conversation with the founder so you can discuss the project and next steps.
+                  </p>
+                </>
+              )}
+              {confirmModal.type === 'decline' && (
+                <>
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">Decline this inquiry?</h2>
+                  <p className="text-sm text-gray-500 mb-6">
+                    The founder will be notified that you are not available for this project. This cannot be undone.
+                  </p>
+                </>
+              )}
+              {confirmModal.type === 'accept_offer' && (
+                <>
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">Accept this offer?</h2>
+                  <p className="text-sm text-gray-500 mb-6">
+                    You are agreeing to the terms set by the founder. The founder will be notified and you can continue chatting.
+                  </p>
+                </>
+              )}
+              {confirmModal.type === 'decline_offer' && (
+                <>
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">Decline this offer?</h2>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Declining will close the chat. The founder will need to send a new offer to reopen it.
+                  </p>
+                </>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="flex-1 border border-gray-200 rounded-full py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Go back
+                </button>
+                <button
+                  onClick={confirmAction}
+                  className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-colors text-white ${
+                    confirmModal.type === 'decline' || confirmModal.type === 'decline_offer'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-[#6b1d2b] hover:bg-[#4e1520]'
+                  }`}
+                >
+                  {confirmModal.type === 'accept' ? 'Yes, accept' :
+                   confirmModal.type === 'decline' ? 'Yes, decline' :
+                   confirmModal.type === 'accept_offer' ? 'Accept offer' :
+                   'Decline offer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
+  // ── List view ──────────────────────────────────────────────────────────────
   const tabs: { id: Tab; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'replied', label: 'Replied' },
@@ -453,86 +541,95 @@ export default function CreatorInquiriesPage() {
   ]
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="flex items-center gap-1 border-b border-gray-200 mb-6">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 pb-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.id
-                ? 'border-[#6b1d2b] text-[#6b1d2b]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="flex flex-col h-full">
+
+      {/* Persistent header */}
+      <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
+        <h1 className="font-editorial text-2xl text-gray-900">Your Inquiries</h1>
       </div>
 
-      {isLoading ? (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-gray-50 last:border-0 animate-pulse">
-              <div className="w-2 h-2 rounded-full bg-gray-100 shrink-0" />
-              <div className="w-11 h-11 rounded-full bg-gray-100 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3.5 bg-gray-100 rounded w-1/3" />
-                <div className="h-3 bg-gray-100 rounded w-2/3" />
-              </div>
-              <div className="h-3 bg-gray-100 rounded w-14 shrink-0" />
-            </div>
+      <div className="p-4 md:p-8 flex-1 overflow-y-auto">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 border-b border-gray-200 mb-6">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 pb-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tab === t.id
+                  ? 'border-[#6b1d2b] text-[#6b1d2b]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
           ))}
         </div>
-      ) : filtered.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          {filtered.map((inq: any) => {
-            const founder = inq.founder as any
-            const fp = Array.isArray(founder?.founder_profiles) ? founder.founder_profiles[0] : founder?.founder_profiles
-            const companyName = fp?.company_name
-            const listIndustry = fp?.industry
-            const replied = hasReplied(inq)
-            const isUnread = !replied && inq.status !== 'declined'
 
-            return (
-              <button
-                key={inq.id}
-                onClick={() => setSelectedId(inq.id)}
-                className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-6 py-4 text-left border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors"
-              >
-                <div className="w-2 h-2 shrink-0">
-                  {isUnread && <span className="block w-2 h-2 rounded-full bg-[#6b1d2b]" />}
+        {isLoading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-gray-50 last:border-0 animate-pulse">
+                <div className="w-2 h-2 rounded-full bg-gray-100 shrink-0" />
+                <div className="w-11 h-11 rounded-full bg-gray-100 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 bg-gray-100 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-2/3" />
                 </div>
-                <Avatar name={founder?.full_name} url={founder?.avatar_url} size="md" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {founder?.full_name || 'Founder'}
-                    {companyName && (
-                      <span className="font-normal text-gray-400"> · {companyName}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">
-                    {listIndustry ? `${listIndustry} · ` : ''}{inq.project_description}
-                  </p>
-                </div>
-                <p className="text-xs text-gray-400 shrink-0 ml-2">{relativeTime(inq.updated_at)}</p>
-              </button>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 text-center py-16">
-          <MessageSquare size={36} className="mx-auto text-gray-200 mb-3" />
-          <p className="text-sm text-gray-600 font-medium mb-1">No inquiries here</p>
-          <p className="text-xs text-gray-400">
-            {tab === 'replied'
-              ? "You haven't replied to any inquiries yet."
-              : tab === 'declined'
-              ? "You haven't declined any inquiries."
-              : 'When a founder reaches out, their message will appear here.'}
-          </p>
-        </div>
-      )}
+                <div className="h-3 bg-gray-100 rounded w-14 shrink-0" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length > 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            {filtered.map((inq: any) => {
+              const founder = inq.founder as any
+              const fp = Array.isArray(founder?.founder_profiles) ? founder.founder_profiles[0] : founder?.founder_profiles
+              const companyName = fp?.company_name
+              const listIndustry = fp?.industry
+              const replied = hasReplied(inq)
+              const isUnread = !replied && inq.status !== 'declined'
+
+              return (
+                <button
+                  key={inq.id}
+                  onClick={() => setSelectedId(inq.id)}
+                  className="w-full flex items-center gap-3 md:gap-4 px-4 md:px-6 py-4 text-left border-b border-gray-50 last:border-0 hover:bg-gray-50/70 transition-colors"
+                >
+                  <div className="w-2 h-2 shrink-0">
+                    {isUnread && <span className="block w-2 h-2 rounded-full bg-[#6b1d2b]" />}
+                  </div>
+                  <Avatar name={founder?.full_name} url={founder?.avatar_url} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {founder?.full_name || 'Founder'}
+                      {companyName && (
+                        <span className="font-normal text-gray-400"> · {companyName}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate mt-0.5">
+                      {listIndustry ? `${listIndustry} · ` : ''}{inq.project_description}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400 shrink-0 ml-2">{relativeTime(inq.updated_at)}</p>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 text-center py-16">
+            <MessageSquare size={36} className="mx-auto text-gray-200 mb-3" />
+            <p className="text-sm text-gray-600 font-medium mb-1">No inquiries here</p>
+            <p className="text-xs text-gray-400">
+              {tab === 'replied'
+                ? "You haven't replied to any inquiries yet."
+                : tab === 'declined'
+                ? "You haven't declined any inquiries."
+                : 'When a founder reaches out, their message will appear here.'}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
