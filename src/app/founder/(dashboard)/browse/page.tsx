@@ -141,7 +141,7 @@ export default function BrowsePage() {
 
   return (
     <div className="p-8">
-      {/* <h1 className="text-2xl font-bold text-gray-900 mb-6">Browse Talent</h1> */}
+      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-6">Browse Talent</h1>
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-8 flex-wrap">

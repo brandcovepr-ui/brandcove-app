@@ -46,7 +46,7 @@ export default function ShortlistPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Your Shortlist</h1>
+      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-8">Your Shortlist</h1>
 
       {isLoading ? (
         <div className="space-y-3">

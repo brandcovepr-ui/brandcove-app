@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BrandCove — Frontend
 
-## Getting Started
+Next.js 14 frontend for the BrandCove two-sided marketplace connecting Founders with Creatives.
 
-First, run the development server:
+## Stack
+
+- **Next.js 14** (App Router, TypeScript)
+- **Tailwind CSS** + **shadcn/ui**
+- **Supabase JS** (`@supabase/supabase-js`, `@supabase/ssr`) — auth + realtime chat
+- **TanStack Query** — server state / data fetching
+- **Zustand** — client state
+- **React Hook Form + Zod** — forms and validation
+- **Lucide React** — icons
+- **Paystack Inline JS** — subscription checkout
+
+## Setup
 
 ```bash
+npm install
+cp .env.local .env.local.bak  # back up, then edit .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase dashboard → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase dashboard → Settings → API |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Paystack dashboard → Settings → API Keys & Webhooks |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` for local dev |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Folder Structure
 
-## Learn More
+```
+src/
+├── app/
+│   ├── (auth)/              # login, signup, forgot-password, reset-password
+│   ├── (onboarding)/        # founder onboarding (3-step wizard) + complete page
+│   ├── (protected)/         # dashboard, browse, profile/[id], shortlist,
+│   │                        # inquiries, inquiries/[id], messages, settings
+│   └── subscribe/           # Paystack subscription paywall
+├── components/
+│   ├── auth/                # LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm, AuthCard
+│   ├── onboarding/          # FounderOnboardingForm
+│   ├── layout/              # Sidebar
+│   ├── creatives/           # CreativeCard
+│   ├── inquiries/           # SendInquiryModal
+│   └── chat/                # ChatWindow, ChatMessage, ChatInput
+├── lib/
+│   ├── supabase/            # client.ts (browser), server.ts (RSC)
+│   ├── api/                 # Fetch wrapper for FastAPI backend
+│   ├── hooks/               # useUser, useChat, useCreatives
+│   ├── stores/              # Zustand global store
+│   ├── types/               # TypeScript interfaces
+│   └── paystack/            # Paystack inline popup helper
+└── middleware.ts             # Auth + onboarding + subscription gate (Next.js Edge)
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Key User Flows
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Sign up** → 3-step onboarding (company info, stage, roles) → subscribe → dashboard
+2. **Browse Talent** — filter by role, budget, availability
+3. **View creative profile** → Send inquiry → real-time chat via Supabase Realtime
+4. **Shortlist** creatives for later comparison
+5. **Settings** — edit profile, manage subscription, change password, cancel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Middleware Logic
 
-## Deploy on Vercel
+`src/middleware.ts` runs on every request and:
+1. Checks Supabase session — if none, redirects to `/login`
+2. Checks `onboarding_complete` — if false, redirects to `/founder`
+3. Checks `subscription_status` — if not `active`, redirects to `/subscribe`
+4. Lets public routes through (`/`, `/login`, `/signup`, etc.)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Running with Docker
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+From the parent folder:
+```bash
+docker-compose up --build
+```
+# brandcove-app
