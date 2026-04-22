@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function PaystackCallbackPage() {
+function CallbackHandler() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState('')
@@ -44,7 +44,6 @@ export default function PaystackCallbackPage() {
           return
         }
 
-        // Redirect to the correct dashboard based on role
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -79,5 +78,20 @@ export default function PaystackCallbackPage() {
       <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
       <p className="text-sm text-gray-500">Confirming your payment…</p>
     </div>
+  )
+}
+
+export default function PaystackCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="auth-bg h-screen flex flex-col items-center justify-center gap-3 font-poppins">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Confirming your payment…</p>
+        </div>
+      }
+    >
+      <CallbackHandler />
+    </Suspense>
   )
 }
