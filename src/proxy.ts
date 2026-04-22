@@ -88,10 +88,8 @@ export async function proxy(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      // If profile couldn't be fetched, send to login to re-authenticate
-      if (!profile) {
-        return NextResponse.redirect(new URL('/login', request.url))
-      }
+      // If profile couldn't be fetched, pass through — the page will handle it
+      if (!profile) return supabaseResponse
 
       if (profile.role === 'admin') {
         return NextResponse.redirect(new URL('/admin', request.url))

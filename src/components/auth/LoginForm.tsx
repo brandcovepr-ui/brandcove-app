@@ -51,7 +51,7 @@ export function LoginForm() {
         .eq('id', userId)
         .single()
 
-      if (!profile) { router.push('/login'); return }
+      if (!profile) { setError('Could not load your account. Please try again.'); setLoading(false); return }
 
       if (profile.role === 'admin') {
         router.push('/admin')
