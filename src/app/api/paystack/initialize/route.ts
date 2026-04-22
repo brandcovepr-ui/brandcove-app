@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabaseAdmin().auth.getUser(token)
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { plan } = await req.json()
+  const { plan: rawPlan } = await req.json()
+  const plan = typeof rawPlan === 'string' ? rawPlan.trim() : rawPlan
   if (!plan) return NextResponse.json({ error: 'Missing plan' }, { status: 400 })
 
   const callback_url = `${process.env.NEXT_PUBLIC_APP_URL}/paystack/callback`
