@@ -70,7 +70,7 @@ export function SignupForm() {
   return (
     <AuthCard mascotSrc="/SignUpMascot.jpg">
       <div className="w-full">
-        <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Let&apos;s set up your account</h1>
+        <h1 className="text-[45px] font-editorial text-black mb-1 tracking-tight leading-tight">Let&apos;s set up your account</h1>
         <p className="text-sm text-gray-500 mb-5 font-poppins">Please confirm your basic details to get started.</p>
 
         {/* Role selector */}

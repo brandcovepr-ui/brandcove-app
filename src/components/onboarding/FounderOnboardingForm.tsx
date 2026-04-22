@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import Image from 'next/image'
+
 
 const INDUSTRIES = ['E-commerce', 'FinTech', 'HealthTech', 'EdTech', 'Media', 'Fashion', 'Real Estate', 'SaaS', 'Other']
 const STAGES = ['Pre-launch', 'Early stage', 'Growth', 'Established']
@@ -31,12 +31,12 @@ const step1Schema = z.object({
 type Step1Data = z.infer<typeof step1Schema>
 
 export function FounderOnboardingForm() {
-  const router = useRouter()
   const { profile } = useUser()
   const [step, setStep] = useState(1)
   const [companyStage, setCompanyStage] = useState('')
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null)
 
   const { register, handleSubmit, formState: { errors } } = useForm<Step1Data>({
@@ -61,9 +61,12 @@ export function FounderOnboardingForm() {
 
     try {
       const userId = profile?.id ?? (await supabase.auth.getUser()).data.user?.id
-      if (!userId) return
+      if (!userId) {
+        setLoading(false)
+        return
+      }
 
-      await supabase.from('founder_profiles').upsert({
+      const { error: upsertError } = await supabase.from('founder_profiles').upsert({
         id: userId,
         company_name: step1Data.company_name,
         industry: [step1Data.industry],
@@ -71,28 +74,70 @@ export function FounderOnboardingForm() {
         creative_types_wanted: selectedRoles,
       })
 
-      await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', userId)
+      if (upsertError) {
+        console.error('founder_profiles upsert error:', upsertError)
+        setLoading(false)
+        return
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ onboarding_complete: true })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('profiles update error:', updateError)
+        setLoading(false)
+        return
+      }
 
       setStep(4)
+    } catch (err) {
+      console.error('finishOnboarding unexpected error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDummyPayment() {
+  async function handlePayment() {
+    if (loading) return
     setLoading(true)
+    setPaymentError('')
+
     const supabase = createClient()
+    const [{ data: { user } }, { data: { session } }] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.auth.getSession(),
+    ])
 
-    const userId = profile?.id ?? (await supabase.auth.getUser()).data.user?.id
-    if (!userId) { setLoading(false); return }
+    if (!user || !session) {
+      setLoading(false)
+      return
+    }
 
-    await supabase.from('profiles').update({
-      subscription_status: 'active',
-      subscription_plan: 'founder_monthly',
-    }).eq('id', userId)
+    try {
+      const res = await fetch('/api/paystack/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ plan: process.env.NEXT_PUBLIC_PAYSTACK_FOUNDER_PLAN_CODE }),
+      })
 
-    setLoading(false)
-    router.push('/founder/dashboard')
+      if (!res.ok) {
+        const body = await res.json()
+        setPaymentError(body.error ?? 'Could not start payment. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const { authorization_url } = await res.json()
+      window.location.href = authorization_url
+    } catch {
+      setPaymentError('Network error. Please try again.')
+      setLoading(false)
+    }
   }
 
   const totalSteps = 4
@@ -112,15 +157,15 @@ export function FounderOnboardingForm() {
         </div>
 
         {/* Body */}
-        <div className="flex flex-row min-h-0">
+        <div className="flex flex-row items-center justify-center  min-h-full">
 
           {/* Form side */}
-          <div className="w-1/2 overflow-y-auto px-10 py-8 flex flex-col justify-center">
+          <div className="w-1/2 overflow-y-auto px-10 py-8 flex ml-20  h-full flex-col  justify-center">
 
             {/* Step 1: Company info */}
             {step === 1 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Tell us about your company</h1>
+                <h1 className="text-4xl font-editorial font-thin text-gray mb-1">Tell us about your company</h1>
                 <p className="text-sm text-gray-500 mb-6">This helps top creatives understand who they&apos;ll be working with.</p>
                 <form onSubmit={handleSubmit(onStep1)} className="space-y-4">
                   <div>
@@ -162,14 +207,14 @@ export function FounderOnboardingForm() {
             {/* Step 2: Company stage */}
             {step === 2 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">What stage is your company in?</h1>
+                <h1 className="text-4xl font-editorial font-[400px] text-gray-900 mb-1">What stage is your company in</h1>
                 <p className="text-sm text-gray-500 mb-6">Help us tailor the experience to your current needs.</p>
                 <div className="space-y-2 mb-6">
                   {STAGES.map(stage => (
                     <button
                       key={stage}
                       onClick={() => setCompanyStage(stage)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-full border text-sm transition-colors ${
                         companyStage === stage
                           ? 'border-gray-900 bg-pink-50 font-medium'
                           : 'border-gray-200 hover:border-gray-400'
@@ -205,7 +250,7 @@ export function FounderOnboardingForm() {
                     <button
                       key={role}
                       onClick={() => toggleRole(role)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-full border text-sm transition-colors ${
                         selectedRoles.includes(role)
                           ? 'border-gray-900 bg-pink-50 font-medium'
                           : 'border-gray-200 hover:border-gray-400'
@@ -268,20 +313,23 @@ export function FounderOnboardingForm() {
                 </div>
 
                 <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                {paymentError && (
+                  <p className="text-xs text-red-500 mb-3">{paymentError}</p>
+                )}
                 <button
-                  onClick={handleDummyPayment}
+                  onClick={handlePayment}
                   disabled={loading}
                   className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-40"
                 >
-                  {loading ? 'Processing…' : 'Subscribe & enter BrandCove'}
+                  {loading ? 'Processing…' : 'Pay ₦25,000 & Enter BrandCove'}
                 </button>
-                <p className="text-xs text-gray-400 text-center mt-3">Payment integration coming soon — this grants instant access.</p>
+                <p className="text-xs text-gray-400 text-center mt-3">Billed monthly. Cancel anytime.</p>
               </>
             )}
           </div>
 
           {/* Mascot side */}
-          <div className="hidden md:flex w-1/2 items-center justify-center p-8 border-l border-gray-50 shrink-0">
+          <div className="hidden md:flex w-1/2 items-center justify-center p-8  shrink-0">
             <Image
               src={
                 step === 1 ? '/OnboardingMascot.png'

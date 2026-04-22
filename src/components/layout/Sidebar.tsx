@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Search, Bookmark, MessageSquare, Settings, LogOut, X } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
@@ -103,7 +104,7 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
     <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
       {/* Logo + mobile close */}
       <div className="px-4 py-5 flex items-center justify-between">
-        <span className="font-bold text-sm tracking-widest text-gray-900 uppercase">BRANDCOVE</span>
+        <Image src="/BrandCovePr.png" alt="BrandCove" width={120} height={32} className="object-contain" />
         <button
           onClick={onNavClick}
           className="md:hidden p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"

@@ -1,36 +1,70 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useUser } from '@/lib/hooks/useUser'
-import { openPaystackCheckout } from '@/lib/paystack/client'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 
 export default function SubscribePage() {
-  const router = useRouter()
-  const { profile } = useUser()
+  const { profile, loading: profileLoading } = useUser()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const isCreative = profile?.role === 'creative'
+  if (profileLoading || !profile) {
+    return (
+      <div className="auth-bg h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  const isCreative = profile.role === 'creative'
   const planLabel = isCreative ? 'Creative Plan' : 'Founder Plan'
+  const planCode = isCreative
+    ? process.env.NEXT_PUBLIC_PAYSTACK_CREATIVE_PLAN_CODE!
+    : process.env.NEXT_PUBLIC_PAYSTACK_FOUNDER_PLAN_CODE!
+  const planPrice = isCreative ? '₦1,000' : '₦3,000'
   const totalSteps = isCreative ? 5 : 4
-  const currentStep = totalSteps
-  const redirectPath = isCreative ? '/creative/dashboard' : '/dashboard'
-
   async function handleSubscribe() {
-    if (!profile) return
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!profile || loading) return
+    setError('')
+    setLoading(true)
 
-    openPaystackCheckout({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
-      email: user.email!,
-      plan: 'PLN_founder_monthly',
-      callback: async () => {
-        router.push(redirectPath)
-      },
-      onClose: () => {},
-    })
+    const supabase = createClient()
+    const [{ data: { user } }, { data: { session } }] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.auth.getSession(),
+    ])
+
+    if (!user || !session) {
+      setError('Session expired. Please log in again.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/paystack/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ plan: planCode }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json()
+        setError(body.error ?? 'Could not start payment. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      const { authorization_url } = await res.json()
+      window.location.href = authorization_url
+    } catch {
+      setError('Network error. Please try again.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -41,7 +75,7 @@ export default function SubscribePage() {
         <div className="flex items-center justify-between px-8 py-5 border-b border-gray-50 shrink-0">
           <span className="text-xl font-bold text-gray-900 tracking-tight">BrandCove</span>
           <span className="text-xs text-gray-400 uppercase tracking-widest">
-            Step {currentStep} of {totalSteps}: Subscribe
+            Step {totalSteps} of {totalSteps}: Subscribe
           </span>
         </div>
 
@@ -53,8 +87,8 @@ export default function SubscribePage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Subscribe to get access</h1>
             <p className="text-sm text-gray-500 mb-6">
               {isCreative
-                ? 'Get full access to inquiries and messages from founders for ₦3,000/month.'
-                : 'Get unlimited access to pre-vetted top talent for ₦3,000/month. No hidden fees. Cancel anytime.'}
+                ? `Get full access to inquiries and messages from founders for ${planPrice}/month.`
+                : `Get unlimited access to pre-vetted top talent for ${planPrice}/month. No hidden fees. Cancel anytime.`}
             </p>
 
             {/* Plan card */}
@@ -65,7 +99,7 @@ export default function SubscribePage() {
                   <p className="text-xs text-gray-400 mt-0.5">Billed monthly. Cancel anytime.</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">₦3,000</p>
+                  <p className="text-2xl font-bold text-gray-900">{planPrice}</p>
                   <p className="text-xs text-gray-400">/month</p>
                 </div>
               </div>
@@ -93,11 +127,16 @@ export default function SubscribePage() {
               ))}
             </div>
 
+            {error && (
+              <p className="text-xs text-red-500 mb-3">{error}</p>
+            )}
+
             <button
               onClick={handleSubscribe}
-              className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-semibold hover:bg-gray-800 transition-colors"
+              disabled={loading}
+              className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-60"
             >
-              Pay ₦3,000 &amp; Subscribe
+              {loading ? 'Processing…' : `Pay ${planPrice} & Subscribe`}
             </button>
           </div>
 

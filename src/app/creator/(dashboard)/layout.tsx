@@ -30,7 +30,10 @@ export default function CreatorDashboardLayout({ children }: { children: React.R
     if (profile.role !== 'creative') { router.replace('/founder/dashboard'); return }
     if (!profile.onboarding_complete) { router.replace('/creator'); return }
     if (profile.review_status !== 'approved') { router.replace('/creator/pending-review'); return }
-    if (profile.subscription_status !== 'active') { router.replace('/subscribe') }
+    const isExpired = profile.subscription_expires_at
+      ? new Date(profile.subscription_expires_at) < new Date()
+      : false
+    if (profile.subscription_status !== 'active' || isExpired) { router.replace('/subscribe') }
   }, [profile, loading, router])
 
   if (loading || !profile) {

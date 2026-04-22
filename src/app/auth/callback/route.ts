@@ -29,7 +29,10 @@ export async function GET(request: Request) {
       }
 
       // Founder
-      if (profile?.onboarding_complete) return NextResponse.redirect(`${origin}/founder/dashboard`)
+      if (profile?.onboarding_complete) {
+        if (profile.subscription_status !== 'active') return NextResponse.redirect(`${origin}/subscribe`)
+        return NextResponse.redirect(`${origin}/founder/dashboard`)
+      }
     }
   }
 

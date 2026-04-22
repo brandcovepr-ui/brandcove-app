@@ -87,10 +87,17 @@ export default function CreatorSettingsPage() {
 
   async function cancelSubscription() {
     if (!profile) return
-    await createClient()
-      .from('profiles')
-      .update({ subscription_status: 'inactive' })
-      .eq('id', profile.id)
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    await fetch('/api/paystack/cancel', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+
+    // Reflect cancelled status locally without a full page reload
+    setProfile({ ...profile, subscription_status: 'inactive' } as any)
     setCancelOpen(false)
   }
 

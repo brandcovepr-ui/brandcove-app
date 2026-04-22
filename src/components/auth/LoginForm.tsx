@@ -65,10 +65,10 @@ export function LoginForm() {
       }
 
       // Founder
-      if (!profile?.onboarding_complete) {
-        router.push('/founder')
-        return
-      }
+      if (!profile?.onboarding_complete) { router.push('/founder'); return }
+      if (profile.subscription_status !== 'active') { router.push('/subscribe'); return }
+      router.push('/founder/dashboard')
+      return
     }
     router.push('/founder/dashboard')
   }
@@ -82,9 +82,9 @@ export function LoginForm() {
   }
 
   return (
-    <AuthCard mascotSrc="/LoginMascot.png">
+    <AuthCard mascotSrc="/LoginMascot.jpg">
       <div className="w-full">
-        <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Welcome back</h1>
+        <h1 className="text-[45px] font-editorial text-black mb-1 tracking-tight leading-tight">Welcome back</h1>
         <p className="text-sm text-gray-500 mb-7 font-poppins">Log in to your account to continue.</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

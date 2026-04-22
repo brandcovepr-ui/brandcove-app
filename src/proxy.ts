@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   '/reset-password',
   '/subscribe',
   '/creator/pending-review',
+  '/paystack/callback',
 ]
 
 // Creator routes that require auth + approval + subscription
@@ -104,7 +105,13 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/creator/dashboard', request.url))
       }
 
-      // Default: founder
+      // Founder
+      if (!profile.onboarding_complete) {
+        return NextResponse.redirect(new URL('/founder', request.url))
+      }
+      if (profile.subscription_status !== 'active') {
+        return NextResponse.redirect(new URL('/subscribe', request.url))
+      }
       return NextResponse.redirect(new URL('/founder/dashboard', request.url))
     }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, Search, Bookmark, MessageSquare, Settings } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
@@ -17,9 +17,26 @@ const bottomNav = [
 ]
 
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
-  useUser()
+  const { profile, loading } = useUser()
+  const router = useRouter()
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  // Guard: redirect if not authenticated, wrong role, not onboarded, or not subscribed
+  useEffect(() => {
+    if (loading) return
+    if (!profile) { router.replace('/login'); return }
+    if (profile.role !== 'founder') { router.replace('/creator/dashboard'); return }
+    if (!profile.onboarding_complete) { router.replace('/founder'); return }
+
+    // Check explicit status OR whether subscription_expires_at has passed
+    const isExpired = profile.subscription_expires_at
+      ? new Date(profile.subscription_expires_at) < new Date()
+      : false
+    if (profile.subscription_status !== 'active' || isExpired) {
+      router.replace('/subscribe')
+    }
+  }, [profile, loading, router])
 
   // Auto-close sidebar on route change
   useEffect(() => { setMobileNavOpen(false) }, [pathname])
