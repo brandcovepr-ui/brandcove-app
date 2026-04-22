@@ -10,6 +10,7 @@ function authHeader() {
 export async function initializeTransaction(params: {
   email: string
   plan: string
+  amount: number
   callback_url: string
 }) {
   const res = await fetch(`${BASE}/transaction/initialize`, {

@@ -22,10 +22,16 @@ export async function POST(req: NextRequest) {
 
   const callback_url = `${process.env.NEXT_PUBLIC_APP_URL}/paystack/callback`
 
+  const isFounderPlan = plan === process.env.NEXT_PUBLIC_PAYSTACK_FOUNDER_PLAN_CODE
+  const amount = isFounderPlan
+    ? Number(process.env.NEXT_PUBLIC_PAYSTACK_FOUNDER_AMOUNT)
+    : Number(process.env.NEXT_PUBLIC_PAYSTACK_CREATIVE_AMOUNT)
+
   try {
     const { authorization_url } = await initializeTransaction({
       email: user.email!,
       plan,
+      amount,
       callback_url,
     })
     return NextResponse.json({ authorization_url })
