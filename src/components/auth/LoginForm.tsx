@@ -45,13 +45,18 @@ export function LoginForm() {
     // Redirect to onboarding if not yet complete, otherwise dashboard
     const userId = authData.user?.id
     if (userId) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, onboarding_complete, review_status, subscription_status')
+        .select('*')
         .eq('id', userId)
         .single()
 
-      if (!profile) { setError('Could not load your account. Please try again.'); setLoading(false); return }
+      if (!profile) {
+        console.error('[LoginForm] profile fetch failed:', profileError)
+        setError(`Could not load your account: ${profileError?.message ?? 'unknown error'}`)
+        setLoading(false)
+        return
+      }
 
       if (profile.role === 'admin') {
         router.push('/admin')
