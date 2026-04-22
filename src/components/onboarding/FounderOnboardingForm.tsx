@@ -290,7 +290,7 @@ export function FounderOnboardingForm() {
                   <div className="flex items-end justify-between mb-4">
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Founder Plan</p>
-                      <p className="text-3xl font-editorial text-gray-900">₦25,000</p>
+                      <p className="text-3xl font-editorial text-gray-900">₦3,000</p>
                     </div>
                     <p className="text-sm text-gray-400 mb-1">/ month</p>
                   </div>
@@ -321,7 +321,7 @@ export function FounderOnboardingForm() {
                   disabled={loading}
                   className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-40"
                 >
-                  {loading ? 'Processing…' : 'Pay ₦25,000 & Enter BrandCove'}
+                  {loading ? 'Processing…' : 'Pay ₦3,000 & Enter BrandCove'}
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3">Billed monthly. Cancel anytime.</p>
               </>

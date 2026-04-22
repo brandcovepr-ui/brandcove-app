@@ -245,7 +245,7 @@ export default function SettingsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-base font-bold text-gray-900">Founder Plan</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">₦25,000 <span className="text-sm font-normal text-gray-400">/month</span></p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">₦3,000 <span className="text-sm font-normal text-gray-400">/month</span></p>
                   </div>
                   {profile?.subscription_expires_at && (
                     <div className="text-right">
