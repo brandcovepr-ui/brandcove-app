@@ -51,12 +51,14 @@ export function LoginForm() {
         .eq('id', userId)
         .single()
 
-      if (profile?.role === 'admin') {
+      if (!profile) { router.push('/login'); return }
+
+      if (profile.role === 'admin') {
         router.push('/admin')
         return
       }
 
-      if (profile?.role === 'creative') {
+      if (profile.role === 'creative') {
         if (!profile.onboarding_complete) { router.push('/creator'); return }
         if (profile.review_status !== 'approved') { router.push('/creator/pending-review'); return }
         if (profile.subscription_status !== 'active') { router.push('/subscribe'); return }
@@ -64,11 +66,12 @@ export function LoginForm() {
         return
       }
 
-      // Founder
-      if (!profile?.onboarding_complete) { router.push('/founder'); return }
-      if (profile.subscription_status !== 'active') { router.push('/subscribe'); return }
-      router.push('/founder/dashboard')
-      return
+      if (profile.role === 'founder') {
+        if (!profile.onboarding_complete) { router.push('/founder'); return }
+        if (profile.subscription_status !== 'active') { router.push('/subscribe'); return }
+        router.push('/founder/dashboard')
+        return
+      }
     }
     router.push('/founder/dashboard')
   }

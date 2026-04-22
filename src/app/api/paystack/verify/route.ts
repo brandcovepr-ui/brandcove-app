@@ -47,16 +47,20 @@ export async function POST(req: NextRequest) {
   const customerCode = txn.customer?.customer_code
   const planCode = txn.plan?.plan_code
   const subscriptionCode = txn.subscription?.subscription_code ?? null
-  const nextPaymentDate = txn.subscription?.next_payment_date ?? null
   const planName = planCode ? resolvePlanName(planCode) : null
+
+  // Paystack sometimes returns next_payment_date on the first charge, sometimes not.
+  // Fall back to 31 days from now so subscription_expires_at is always populated.
+  const nextPaymentDate = txn.subscription?.next_payment_date
+    ?? new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
 
   const update: Record<string, unknown> = {
     subscription_status: 'active',
+    subscription_expires_at: nextPaymentDate,
     paystack_customer_code: customerCode ?? null,
   }
   if (planName) update.subscription_plan = planName
   if (subscriptionCode) update.paystack_subscription_code = subscriptionCode
-  if (nextPaymentDate) update.subscription_expires_at = nextPaymentDate
 
   const { error: dbError } = await supabaseAdmin()
     .from('profiles')

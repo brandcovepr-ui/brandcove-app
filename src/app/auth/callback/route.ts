@@ -36,5 +36,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/founder`)
+  return NextResponse.redirect(`${origin}/login`)
 }
