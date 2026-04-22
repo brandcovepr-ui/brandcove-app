@@ -88,11 +88,16 @@ export async function proxy(request: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      if (profile?.role === 'admin') {
+      // If profile couldn't be fetched, send to login to re-authenticate
+      if (!profile) {
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+
+      if (profile.role === 'admin') {
         return NextResponse.redirect(new URL('/admin', request.url))
       }
 
-      if (profile?.role === 'creative') {
+      if (profile.role === 'creative') {
         if (!profile.onboarding_complete) {
           return NextResponse.redirect(new URL('/creator', request.url))
         }
@@ -105,14 +110,15 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/creator/dashboard', request.url))
       }
 
-      // Founder
-      if (!profile?.onboarding_complete) {
-        return NextResponse.redirect(new URL('/founder', request.url))
+      if (profile.role === 'founder') {
+        if (!profile.onboarding_complete) {
+          return NextResponse.redirect(new URL('/founder', request.url))
+        }
+        if (profile.subscription_status !== 'active') {
+          return NextResponse.redirect(new URL('/subscribe', request.url))
+        }
+        return NextResponse.redirect(new URL('/founder/dashboard', request.url))
       }
-      if (profile?.subscription_status !== 'active') {
-        return NextResponse.redirect(new URL('/subscribe', request.url))
-      }
-      return NextResponse.redirect(new URL('/founder/dashboard', request.url))
     }
 
     // Unauthenticated user on creator/admin protected routes → login
