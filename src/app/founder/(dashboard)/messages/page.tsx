@@ -64,7 +64,7 @@ export default function FounderMessagesPage() {
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ['founder-messages', profile?.id],
-    staleTime: 0,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       if (!profile?.id) return []
       const supabase = createClient()

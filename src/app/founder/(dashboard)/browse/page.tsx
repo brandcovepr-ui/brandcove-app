@@ -97,7 +97,7 @@ export default function BrowsePage() {
 
   const { data: shortlistedIds } = useQuery({
     queryKey: ['shortlist-ids', profile?.id],
-    staleTime: 0,
+    staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return new Set<string>()
       const supabase = createClient()
@@ -238,25 +238,31 @@ export default function BrowsePage() {
             </div>
           )}
         </>
+      ) : hasActiveFilters ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
+            <Search size={32} className="text-[#6b1d2b]" />
+          </div>
+          <h2 className="font-editorial text-3xl text-gray-900 mb-3">No results found.</h2>
+          <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-7">
+            No one matches your current filters. Try adjusting or clearing them to see more talent.
+          </p>
+          <button
+            onClick={clearFilters}
+            className="bg-[#6b1d2b] text-white px-7 py-2.5 rounded-lg text-sm font-medium hover:bg-[#4e1520] transition-colors"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Search size={22} className="text-gray-300" />
+          <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
+            <Search size={32} className="text-[#6b1d2b]" />
           </div>
-          <p className="text-gray-700 font-medium mb-1">No creatives found</p>
-          <p className="text-sm text-gray-400 mb-5">
-            {hasActiveFilters
-              ? 'No one matches your current filters. Try adjusting or clearing them.'
-              : 'No creatives have joined yet.'}
+          <h2 className="font-editorial text-3xl text-gray-900 mb-3">No talent available yet.</h2>
+          <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+            Creatives are being reviewed and approved. Check back soon — your perfect match is on the way.
           </p>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="bg-[#6b1d2b] text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"
-            >
-              Clear filters
-            </button>
-          )}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, Plus, Bookmark, FileText, MessageSquare } from 'lucide-react'
+import { Plus, Bookmark, FileText, MessageSquare, Users } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns'
 function useDashboardData(userId: string | undefined) {
   return useQuery({
     queryKey: ['dashboard', userId],
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!userId) return null
       const supabase = createClient()
@@ -151,29 +151,24 @@ export default function DashboardPage() {
   })()
 
   return (
-    <div className="p-8">
+    <div className="flex flex-col h-full p-8 gap-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-regular font-editorial  text-gray-900">Welcome back, {firstName}</h1>
+          <h1 className="text-2xl font-regular font-editorial text-gray-900">Welcome back, {firstName}</h1>
           <p className="text-sm text-gray-500 mt-1">Here is what is happening with your hiring pipeline today.</p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
-            <Bell size={20} />
-          </button> */}
-          <Link
-            href="/founder/browse"
-            className="flex items-center gap-2 bg-[#6b1d2b] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"
-          >
-            <Plus size={16} />
-            Hire Talent
-          </Link>
-        </div>
+        <Link
+          href="/founder/browse"
+          className="flex items-center gap-2 bg-[#6b1d2b] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"
+        >
+          <Plus size={16} />
+          Hire Talent
+        </Link>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 shrink-0">
         <StatCard
           label="Shortlisted Talents"
           value={data?.shortlistCount ?? 0}
@@ -194,68 +189,76 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Recommended talent */}
-        <div className="col-span-3 bg-white rounded-xl border border-gray-100 ">
-          <div className="flex items-center justify-between border-b p-4 mb-4">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Recommended Talent</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {isLoading ? '\u00a0' : recommendedSubtitle}
-              </p>
-            </div>
-            <Link href="/founder/browse" className="text-xs text-[#6b1d2b] font-medium hover:underline">View All</Link>
+      {/* Recommended talent — stretches to fill remaining height */}
+      <div className="flex-1 flex flex-col bg-white rounded-xl border border-gray-100 min-h-0">
+        <div className="flex items-center justify-between border-b border-gray-100 p-4 shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Recommended Talent</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {isLoading ? '\u00a0' : recommendedSubtitle}
+            </p>
           </div>
-
-          <div className="space-y-3 p-4">
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-100 shrink-0" />
-                    <div className="space-y-1.5">
-                      <div className="h-3 bg-gray-100 rounded w-28" />
-                      <div className="h-2.5 bg-gray-100 rounded w-16" />
-                    </div>
-                  </div>
-                  <div className="h-7 w-20 bg-gray-100 rounded-full" />
-                </div>
-              ))
-            ) : data?.recommended && data.recommended.length > 0 ? (
-              data.recommended.map((creative: any) => (
-                <div key={creative.id} className="flex items-center justify-between py-2 border-b/80 border-black last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-200 to-purple-300 flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
-                      {creative.avatar_url ? (
-                        <img src={creative.avatar_url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        creative.full_name?.[0] || 'C'
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{creative.full_name}</p>
-                      <p className="text-xs text-gray-400">{(creative.creative_profiles as any)?.discipline || 'Creative'}</p>
-                    </div>
-                  </div>
-                  <Link
-                    href={`/founder/profile/${creative.id}`}
-                    className="text-xs text-gray-900 border border-gray-200 rounded-sm shadow-sm px-3 py-1 hover:bg-gray-50 transition-colors"
-                  >
-                    View Profile
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-400">No creatives available yet.</p>
-                <Link href="/founder/browse" className="text-xs text-[#6b1d2b] hover:underline font-medium mt-1 block">Browse talent</Link>
-              </div>
-            )}
-          </div>
+          <Link href="/founder/browse" className="text-xs text-[#6b1d2b] font-medium hover:underline">View All</Link>
         </div>
 
-        {/* Recent activity */}
-
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 shrink-0" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 bg-gray-100 rounded w-28" />
+                    <div className="h-2.5 bg-gray-100 rounded w-16" />
+                  </div>
+                </div>
+                <div className="h-7 w-20 bg-gray-100 rounded-full" />
+              </div>
+            ))}
+          </div>
+        ) : data?.recommended && data.recommended.length > 0 ? (
+          <div className="space-y-3 p-4">
+            {data.recommended.map((creative: any) => (
+              <div key={creative.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#d4a0a8] flex items-center justify-center text-sm font-bold text-white shrink-0 overflow-hidden">
+                    {creative.avatar_url ? (
+                      <img src={creative.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      creative.full_name?.[0] || 'C'
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{creative.full_name}</p>
+                    <p className="text-xs text-gray-400">{(creative.creative_profiles as any)?.discipline || 'Creative'}</p>
+                  </div>
+                </div>
+                <Link
+                  href={`/founder/profile/${creative.id}`}
+                  className="text-xs text-gray-900 border border-gray-200 rounded-lg shadow-sm px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  View Profile
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
+              <Users size={32} className="text-[#6b1d2b]" />
+            </div>
+            <h2 className="font-editorial text-3xl text-gray-900 mb-3">No talent available yet.</h2>
+            <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-7">
+              Creatives are being reviewed and approved. Check back soon — your perfect match is on the way.
+            </p>
+            <Link
+              href="/founder/browse"
+              className="bg-[#6b1d2b] text-white px-7 py-2.5 rounded-lg text-sm font-medium hover:bg-[#4e1520] transition-colors"
+            >
+              Browse Talent
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   )

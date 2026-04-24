@@ -1,0 +1,744 @@
+{
+  "config": {
+    "configFile": "/Users/eriitunuadesioye/Desktop/brandcove-app/frontend/playwright.config.ts",
+    "rootDir": "/Users/eriitunuadesioye/Desktop/brandcove-app/frontend/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/eriitunuadesioye/Desktop/brandcove-app/frontend/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/eriitunuadesioye/Desktop/brandcove-app/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "on-failure"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "auth/founder-dashboard.spec.ts",
+      "file": "auth/founder-dashboard.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Founder dashboard auth",
+          "file": "auth/founder-dashboard.spec.ts",
+          "line": 37,
+          "column": 6,
+          "specs": [
+            {
+              "title": "founder can access their dashboard after login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-5d8a7e0aea3952b41ef0",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "all founder dashboard pages load without auth errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-a153c14fafd42bc8c912",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 54,
+              "column": 7
+            },
+            {
+              "title": "sidebar navigation links are all present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-58a50782fff7b5b5fe10",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 115,
+              "column": 7
+            },
+            {
+              "title": "a creative user cannot access founder routes — role guard redirects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-6575e82e5fc97eb14543",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 134,
+              "column": 7
+            },
+            {
+              "title": "founder cannot access creator routes — role guard redirects",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-e966eb7c93aa4781307c",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 150,
+              "column": 7
+            },
+            {
+              "title": "browse page displays talent grid or empty state — no crash",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-c6f5fb447f916c0a953d",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 164,
+              "column": 7
+            },
+            {
+              "title": "settings page has all three tabs",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "0f7f65df4cc5efcbd815-9d452866c17b33a8ddf2",
+              "file": "auth/founder-dashboard.spec.ts",
+              "line": 187,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "auth/login.spec.ts",
+      "file": "auth/login.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Login flow",
+          "file": "auth/login.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "login page renders required elements",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-6041b8779894834708f9",
+              "file": "auth/login.spec.ts",
+              "line": 21,
+              "column": 7
+            },
+            {
+              "title": "successful login redirects to dashboard and sets auth cookies",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-aac26393e73fc8752d97",
+              "file": "auth/login.spec.ts",
+              "line": 38,
+              "column": 7
+            },
+            {
+              "title": "wrong credentials shows an error and does not redirect",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-c734d7b0a7bf7a5f298e",
+              "file": "auth/login.spec.ts",
+              "line": 74,
+              "column": 7
+            },
+            {
+              "title": "unauthenticated user is redirected away from the founder dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-53f8f0e33217335edb72",
+              "file": "auth/login.spec.ts",
+              "line": 96,
+              "column": 7
+            },
+            {
+              "title": "unauthenticated user is redirected away from the creator dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-9645e1617fba2af1e8a3",
+              "file": "auth/login.spec.ts",
+              "line": 111,
+              "column": 7
+            },
+            {
+              "title": "authenticated user visiting /login is redirected to their dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "231ca1f0f4db3e4958c3-6c4725bda79b7fa4e795",
+              "file": "auth/login.spec.ts",
+              "line": 124,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "auth/logout.spec.ts",
+      "file": "auth/logout.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Logout and session cleanup",
+          "file": "auth/logout.spec.ts",
+          "line": 24,
+          "column": 6,
+          "specs": [
+            {
+              "title": "sign-out button is visible in the sidebar",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "68b4c1a99ac3ce3ed9d6-ed8f0e0fe23da960405f",
+              "file": "auth/logout.spec.ts",
+              "line": 26,
+              "column": 7
+            },
+            {
+              "title": "logout clears auth cookies and redirects to /login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "68b4c1a99ac3ce3ed9d6-7b24642bc7538b0579cd",
+              "file": "auth/logout.spec.ts",
+              "line": 35,
+              "column": 7
+            },
+            {
+              "title": "after logout, the dashboard is inaccessible — redirects to /login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "68b4c1a99ac3ce3ed9d6-d8b4ef2f745289031b12",
+              "file": "auth/logout.spec.ts",
+              "line": 73,
+              "column": 7
+            },
+            {
+              "title": "session is not restored on page refresh after logout",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "68b4c1a99ac3ce3ed9d6-8ba692122453e5ef5dc8",
+              "file": "auth/logout.spec.ts",
+              "line": 95,
+              "column": 7
+            },
+            {
+              "title": "API routes return 401 after logout cookies are cleared",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "68b4c1a99ac3ce3ed9d6-91bc7b6769fc13146cbb",
+              "file": "auth/logout.spec.ts",
+              "line": 114,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "auth/proxy.spec.ts",
+      "file": "auth/proxy.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Proxy / updateSession behaviour",
+          "file": "auth/proxy.spec.ts",
+          "line": 27,
+          "column": 6,
+          "specs": [
+            {
+              "title": "proxy does not produce 500 errors on dashboard page loads",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "bc29603b1b27b3bc9a19-9397590dbe876b279db0",
+              "file": "auth/proxy.spec.ts",
+              "line": 29,
+              "column": 7
+            },
+            {
+              "title": "static assets are excluded from the proxy and load quickly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "bc29603b1b27b3bc9a19-10347a98d08319583fd5",
+              "file": "auth/proxy.spec.ts",
+              "line": 63,
+              "column": 7
+            },
+            {
+              "title": "proxy does not run on the /api/auth/signout route handler",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "bc29603b1b27b3bc9a19-f30404d47ef0fbebd425",
+              "file": "auth/proxy.spec.ts",
+              "line": 96,
+              "column": 7
+            },
+            {
+              "title": "proxy sets a cookie on the response for each authenticated dashboard request",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "bc29603b1b27b3bc9a19-68b57e35148d55de09f9",
+              "file": "auth/proxy.spec.ts",
+              "line": 112,
+              "column": 7
+            },
+            {
+              "title": "proxy handles concurrent navigation without cookie race conditions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "bc29603b1b27b3bc9a19-9bea144120582d3b8410",
+              "file": "auth/proxy.spec.ts",
+              "line": 134,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "auth/session-persistence.spec.ts",
+      "file": "auth/session-persistence.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Session persistence and token refresh",
+          "file": "auth/session-persistence.spec.ts",
+          "line": 37,
+          "column": 6,
+          "specs": [
+            {
+              "title": "session cookies have correct security attributes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-fb864006fe0c0d64351f",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 39,
+              "column": 7
+            },
+            {
+              "title": "proxy rewrites cookies and keeps the user on the dashboard after navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-618b4bdfb1e86a057e07",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "no 401 or 403 responses immediately after login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-63f3012b057bbf0046e1",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 91,
+              "column": 7
+            },
+            {
+              "title": "simulated access-token expiry — proxy renews session without re-login",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-2de7fb42f103cc0d65ec",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 116,
+              "column": 7
+            },
+            {
+              "title": "dashboard reaches networkidle within 15 s — no infinite loading",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-bd7cb1c8efe08a33ee92",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 173,
+              "column": 7
+            },
+            {
+              "title": "switching between dashboard routes does not trigger re-auth",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6ec2a822580236dc3aa7-3758b7e1a1414cde7f3d",
+              "file": "auth/session-persistence.spec.ts",
+              "line": 209,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-24T16:44:42.795Z",
+    "duration": 131.01200000000006,
+    "expected": 0,
+    "skipped": 29,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

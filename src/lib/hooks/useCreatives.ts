@@ -19,7 +19,7 @@ export function useCreatives(filters: CreativeFilters = {}) {
 
   return useQuery({
     queryKey: ['creatives', filters],
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const supabase = createClient()
       const hasFilters = filters.discipline || filters.availability || filters.maxRate
@@ -54,7 +54,7 @@ export function useCreatives(filters: CreativeFilters = {}) {
 export function useCreative(id: string) {
   return useQuery({
     queryKey: ['creative', id],
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const supabase = createClient()
       const { data, error } = await supabase

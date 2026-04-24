@@ -50,8 +50,9 @@ export function CreativeCard({ creative, initialShortlisted = false }: CreativeC
       setShortlisted(true)
     }
     setSaving(false)
-    // Refresh shortlist page and dashboard stat immediately
+    // Refresh shortlist page, browse bookmark state, and dashboard stat
     queryClient.invalidateQueries({ queryKey: ['shortlist'] })
+    queryClient.invalidateQueries({ queryKey: ['shortlist-ids'] })
     queryClient.invalidateQueries({ queryKey: ['dashboard'] })
   }
 

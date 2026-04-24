@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('profile')
   const { profile } = useUser()
   const setProfile = useAppStore(s => s.setProfile)
+  const queryClient = useQueryClient()
   const [cancelOpen, setCancelOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [userEmail, setUserEmail] = useState('')
@@ -46,6 +47,7 @@ export default function SettingsPage() {
   // Fetch founder_profile for pre-populating company fields
   const { data: founderProfile } = useQuery({
     queryKey: ['founder-profile-settings', profile?.id],
+    staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return null
       const { data } = await createClient()
@@ -98,6 +100,7 @@ export default function SettingsPage() {
     ])
 
     if (profileUpdate.data) setProfile(profileUpdate.data as any)
+    queryClient.invalidateQueries({ queryKey: ['founder-profile-settings', profile.id] })
     showSaved()
   }
 

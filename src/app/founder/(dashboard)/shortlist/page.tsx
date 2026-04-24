@@ -23,7 +23,7 @@ export default function ShortlistPage() {
 
   const { data: shortlisted, isLoading } = useQuery({
     queryKey: ['shortlist', profile?.id],
-    staleTime: 0,
+    staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return []
       const supabase = createClient()

@@ -21,6 +21,7 @@ export default function InquiriesPage() {
 
   const { data: inquiries, isLoading } = useQuery({
     queryKey: ['inquiries', profile?.id],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!profile?.id) return []
       const supabase = createClient()

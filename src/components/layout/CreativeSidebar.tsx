@@ -98,11 +98,11 @@ export function CreativeSidebar({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
       {/* Logo + mobile close */}
-      <div className="px-4 py-5 flex items-center justify-between">
+      <div className="relative flex items-center justify-center py-4 border-b border-gray-200/60">
         <Image src="/BrandCovePr.png" alt="BrandCove" width={120} height={32} className="object-contain" />
         <button
           onClick={onNavClick}
-          className="md:hidden p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"
+          className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"
           aria-label="Close menu"
         >
           <X size={18} />
