@@ -69,21 +69,23 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-gray-900">Send Inquiry to {creativeName}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="flex items-start justify-between mb-6">
+          <h2 className="font-editorial text-2xl text-gray-900 leading-tight">
+            Inquire with<br />{creativeName}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Project Description</label>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Project Context</label>
             <textarea
               {...register('project_description')}
               rows={4}
-              placeholder="Describe your project, goals, and what you need help with..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+              placeholder="Briefly describe your company and what you need help with..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
             />
             {errors.project_description && (
               <p className="text-xs text-red-500 mt-1">{errors.project_description.message}</p>
@@ -93,35 +95,46 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Timeline</label>
-              <input
+              <select
                 {...register('timeline')}
-                placeholder="e.g. 3 months"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white text-gray-700"
+              >
+                <option value="">Select timeline</option>
+                <option value="Start immediately">Start immediately</option>
+                <option value="Within 2 weeks">Within 2 weeks</option>
+                <option value="Within a month">Within a month</option>
+                <option value="1–3 months">1–3 months</option>
+                <option value="3–6 months">3–6 months</option>
+                <option value="Flexible">Flexible</option>
+              </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Budget (₦)</label>
-              <input
-                {...register('budget')}
-                type="number"
-                placeholder="e.g. 150000"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-              />
+              <label className="block text-xs font-medium text-gray-700 mb-1">Budget</label>
+              <div className="flex items-stretch border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-gray-900">
+                <span className="flex items-center px-2.5 bg-gray-50 text-gray-500 text-sm border-r border-gray-200 shrink-0">₦</span>
+                <input
+                  {...register('budget')}
+                  type="number"
+                  placeholder="150,000"
+                  className="flex-1 px-2.5 py-2.5 text-sm focus:outline-none min-w-0"
+                />
+                <span className="flex items-center px-2.5 bg-gray-50 text-gray-400 text-xs border-l border-gray-200 shrink-0 whitespace-nowrap">/mo</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-gray-200 rounded-full py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="border border-gray-200 rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-[#6b1d2b] text-white rounded-full py-2.5 text-sm font-medium hover:bg-[#4e1520] transition-colors disabled:opacity-60"
+              className="bg-[#6b1d2b] text-white rounded-lg px-5 py-2.5 text-sm font-medium hover:bg-[#4e1520] transition-colors disabled:opacity-60"
             >
               {loading ? 'Sending…' : 'Send Inquiry'}
             </button>

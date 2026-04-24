@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-import { Bookmark, Trash2 } from 'lucide-react'
+import { Heart, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { SendInquiryModal } from '@/components/inquiries/SendInquiryModal'
@@ -113,12 +113,19 @@ export default function ShortlistPage() {
           })}
         </div>
       ) : (
-        <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
-          <Bookmark size={40} className="mx-auto text-gray-200 mb-3" />
-          <p className="text-gray-400 text-sm mb-4">You haven&apos;t shortlisted anyone yet.</p>
+        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-gray-100">
+          <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
+            <Heart size={32} className="text-[#6b1d2b]" />
+          </div>
+          <h2 className="font-editorial text-3xl text-gray-900 text-center mb-3">
+            You have not saved<br />anyone yet.
+          </h2>
+          <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-7">
+            Tap the heart icon on any talent card or profile to save them here for easy access later.
+          </p>
           <Link
             href="/founder/browse"
-            className="inline-flex items-center gap-2 bg-[#6b1d2b] text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"
+            className="bg-[#6b1d2b] text-white px-7 py-2.5 rounded-lg text-sm font-medium hover:bg-[#4e1520] transition-colors"
           >
             Browse Talent
           </Link>

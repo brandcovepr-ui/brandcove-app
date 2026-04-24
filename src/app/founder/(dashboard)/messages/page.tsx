@@ -7,7 +7,8 @@ import { useUser } from '@/lib/hooks/useUser'
 import { ChatWindow } from '@/components/chat/ChatWindow'
 import { SendOfferModal } from '@/components/chat/SendOfferModal'
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns'
-import { MessageSquare, ChevronRight, CheckCircle, Sparkles, ChevronLeft, ArrowLeftCircle, MousePointer } from 'lucide-react'
+import { MessageSquare, ChevronRight, CheckCircle, Sparkles, ChevronLeft, ArrowLeftCircle, Send } from 'lucide-react'
+import Link from 'next/link'
 
 function relativeTime(dateStr: string) {
   const d = new Date(dateStr)
@@ -318,16 +319,21 @@ export default function FounderMessagesPage() {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 text-center py-16">
-            <MousePointer size={36} className="mx-auto text-maroon bg-[#F2E6E8] p-2 rounded-full mb-3" />
-            <p className="text-xl font-editorial text-gray-600 font-medium mb-1">No inquiries sent yet</p>
-            <p className="text-xs text-gray-400">
-              When you are ready to reach out to a talent, tap Hire on their profile.
+          <div className="bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center py-24">
+            <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
+              <Send size={32} className="text-[#6b1d2b]" />
+            </div>
+            <h2 className="font-editorial text-3xl text-gray-900 mb-3">No inquiries sent yet.</h2>
+            <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-7">
+              When you&apos;re ready to reach out to a talent, tap Hire on their profile.
               Your active inquiries will appear here so you can track every conversation.
             </p>
-            <button className="mt-4 bg-maroon text-white px-4 py-2 rounded-lg">
-              Browse Talents
-            </button>
+            <Link
+              href="/founder/browse"
+              className="bg-[#6b1d2b] text-white px-7 py-2.5 rounded-lg text-sm font-medium hover:bg-[#4e1520] transition-colors"
+            >
+              Browse Talent
+            </Link>
           </div>
         )}
       </div>
