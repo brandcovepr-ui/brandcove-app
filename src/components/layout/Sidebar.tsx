@@ -67,7 +67,7 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
 
   const hiringNav: NavItem[] = [
     { label: 'Shortlist', href: '/founder/shortlist', icon: <Bookmark size={18} /> },
-    { label: 'Messages', href: '/founder/messages', icon: <MessageSquare size={18} />, badge: unreadCount ?? undefined },
+    { label: 'Inquiries', href: '/founder/messages', icon: <MessageSquare size={18} />, badge: unreadCount ?? undefined },
   ]
 
   const { setProfile } = useAppStore()
@@ -103,8 +103,8 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
       {/* Logo + mobile close */}
-      <div className="px-4 py-5 flex items-center justify-between">
-        <Image src="/BrandCovePr.png" alt="BrandCove" width={120} height={32} className="object-contain" />
+      <div className="flex items-center justify-between">
+        <Image src="/BrandCovePr.png" alt="BrandCove" width={120} height={10} />
         <button
           onClick={onNavClick}
           className="md:hidden p-1 text-gray-500 hover:text-gray-800 rounded transition-colors"

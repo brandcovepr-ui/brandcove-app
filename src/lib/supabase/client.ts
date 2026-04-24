@@ -25,10 +25,18 @@ function loggingFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Res
   })
 }
 
+// Singleton — one instance owns the auto-refresh timer.
+// Multiple instances each set up competing timers, which can race on expiry
+// and cause 401s when one timer wins the refresh but others still hold the
+// stale token. A single shared instance eliminates the race entirely.
+let _client: ReturnType<typeof createBrowserClient> | undefined
+
 export function createClient() {
-  return createBrowserClient(
+  if (_client) return _client
+  _client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     isDev ? { global: { fetch: loggingFetch } } : undefined
   )
+  return _client
 }

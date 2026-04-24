@@ -25,6 +25,13 @@ const CREATOR_PROTECTED_PREFIXES = [
 // Admin routes
 const ADMIN_PREFIXES = ['/admin']
 
+/** Copy any refreshed session cookies from supabaseResponse onto a redirect. */
+function redirectWithCookies(to: URL, supabaseResponse: NextResponse): NextResponse {
+  const res = NextResponse.redirect(to)
+  supabaseResponse.cookies.getAll().forEach(cookie => res.cookies.set(cookie))
+  return res
+}
+
 export async function proxy(request: NextRequest) {
   try {
     let supabaseResponse = NextResponse.next({ request })
@@ -48,32 +55,19 @@ export async function proxy(request: NextRequest) {
       }
     )
 
-    const { data: { user } } = await supabase.auth.getUser()
+    // getSession() reads the session from cookies locally — no GoTrue network call
+    // for valid tokens. If the access token is expired it calls the refresh
+    // endpoint once to obtain a new one and writes the updated cookies onto
+    // supabaseResponse via the setAll hook. This is the "optimistic check"
+    // pattern recommended by Next.js 16 for Proxy: trust the cookie for routing
+    // decisions; actual data-layer security is enforced by RLS and route-handler
+    // auth checks. getUser() (which always hits GoTrue even for valid tokens) was
+    // causing visible latency and, under prefetch load, the appearance of infinite
+    // loading on every dashboard page.
+    const { data: { session } } = await supabase.auth.getSession()
+    const user = session?.user ?? null
     const pathname = request.nextUrl.pathname
     const isPublic = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith('/auth/'))
-
-    // If no user but stale sb-* cookies exist, expire them so the browser
-    // doesn't keep sending them on subsequent requests.
-    if (!user) {
-      const hasSbCookies = request.cookies.getAll().some(({ name }) => name.startsWith('sb-'))
-      if (hasSbCookies) {
-        const cleanupResponse = isPublic
-          ? NextResponse.next({ request })
-          : NextResponse.redirect(new URL('/login', request.url))
-        request.cookies.getAll().forEach(({ name }) => {
-          if (name.startsWith('sb-')) {
-            cleanupResponse.cookies.set(name, '', {
-              maxAge: 0,
-              path: '/',
-              sameSite: 'lax',
-              secure: process.env.NODE_ENV === 'production',
-              httpOnly: false,
-            })
-          }
-        })
-        return cleanupResponse
-      }
-    }
 
     // Unauthenticated user hitting a protected route → send to login
     if (!user && !isPublic) {
@@ -92,30 +86,30 @@ export async function proxy(request: NextRequest) {
       if (!profile) return supabaseResponse
 
       if (profile.role === 'admin') {
-        return NextResponse.redirect(new URL('/admin', request.url))
+        return redirectWithCookies(new URL('/admin', request.url), supabaseResponse)
       }
 
       if (profile.role === 'creative') {
         if (!profile.onboarding_complete) {
-          return NextResponse.redirect(new URL('/creator', request.url))
+          return redirectWithCookies(new URL('/creator', request.url), supabaseResponse)
         }
         if (profile.review_status !== 'approved') {
-          return NextResponse.redirect(new URL('/creator/pending-review', request.url))
+          return redirectWithCookies(new URL('/creator/pending-review', request.url), supabaseResponse)
         }
         if (profile.subscription_status !== 'active') {
-          return NextResponse.redirect(new URL('/subscribe', request.url))
+          return redirectWithCookies(new URL('/subscribe', request.url), supabaseResponse)
         }
-        return NextResponse.redirect(new URL('/creator/dashboard', request.url))
+        return redirectWithCookies(new URL('/creator/dashboard', request.url), supabaseResponse)
       }
 
       if (profile.role === 'founder') {
         if (!profile.onboarding_complete) {
-          return NextResponse.redirect(new URL('/founder', request.url))
+          return redirectWithCookies(new URL('/founder', request.url), supabaseResponse)
         }
         if (profile.subscription_status !== 'active') {
-          return NextResponse.redirect(new URL('/subscribe', request.url))
+          return redirectWithCookies(new URL('/subscribe', request.url), supabaseResponse)
         }
-        return NextResponse.redirect(new URL('/founder/dashboard', request.url))
+        return redirectWithCookies(new URL('/founder/dashboard', request.url), supabaseResponse)
       }
     }
 

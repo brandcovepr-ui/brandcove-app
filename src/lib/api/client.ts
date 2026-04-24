@@ -4,6 +4,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const supabase = createClient()
+  // getSession() reads from the cookie cache and may return an already-expired
+  // access token if the auto-refresh timer hasn't fired yet. getUser() validates
+  // against the Supabase auth server and triggers a refresh when needed, so the
+  // token we attach is always valid at the time of the request.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { 'Content-Type': 'application/json' }
   const { data: { session } } = await supabase.auth.getSession()
   return {
     'Content-Type': 'application/json',

@@ -48,7 +48,11 @@ export function useUser() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setProfile(null)
-      } else if (event === 'SIGNED_IN' && session?.user) {
+      } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        // TOKEN_REFRESHED fires when the singleton auto-refresh timer exchanges
+        // the refresh token for a new access token. Re-fetch the profile so the
+        // store always reflects the current session, even if the initial load
+        // raced with the first refresh on a cold page visit.
         const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
         if (data) setProfile(data as Profile)
       }

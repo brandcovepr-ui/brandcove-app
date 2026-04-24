@@ -159,9 +159,9 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">Here is what is happening with your hiring pipeline today.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+          {/* <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
             <Bell size={20} />
-          </button>
+          </button> */}
           <Link
             href="/founder/browse"
             className="flex items-center gap-2 bg-[#6b1d2b] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"

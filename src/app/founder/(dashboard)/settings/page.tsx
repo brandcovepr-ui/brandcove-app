@@ -110,6 +110,10 @@ export default function SettingsPage() {
   async function cancelSubscription() {
     if (!profile) return
     const supabase = createClient()
+    // getUser() validates with the auth server and triggers a token refresh if
+    // the access token is expired, so the session we read next is always fresh.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
@@ -131,7 +135,7 @@ export default function SettingsPage() {
   return (
     <div className="p-8 relative">
       {/* Page heading */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
+      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-8">Account Settings</h1>
 
       {/* Saved toast */}
       {saved && (

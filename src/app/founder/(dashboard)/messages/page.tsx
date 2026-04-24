@@ -7,7 +7,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import { ChatWindow } from '@/components/chat/ChatWindow'
 import { SendOfferModal } from '@/components/chat/SendOfferModal'
 import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns'
-import { MessageSquare, ChevronRight, CheckCircle, Sparkles } from 'lucide-react'
+import { MessageSquare, ChevronRight, CheckCircle, Sparkles, ChevronLeft, ArrowLeftCircle, MousePointer } from 'lucide-react'
 
 function relativeTime(dateStr: string) {
   const d = new Date(dateStr)
@@ -108,25 +108,31 @@ export default function FounderMessagesPage() {
       <div className="flex flex-col h-full min-h-0">
 
         {/* Persistent header: breadcrumb */}
-        <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
+        {/* <div className="px-4 md:px-8 py-5 border-b border-black/10 shrink-0">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedId(null)}
-              className="font-editorial text-2xl text-gray-400 hover:text-gray-700 transition-colors leading-none"
+              className="text-sm text-gray-400 hover:text-gray-700 transition-colors leading-none"
             >
-              Messages
+              Inquiries
             </button>
             <ChevronRight size={16} className="text-gray-300 shrink-0" />
-            <span className="font-editorial text-2xl text-gray-900 leading-none truncate">
-              {creative?.full_name}
+            <span className="text-sm text-gray-900 leading-none truncate">
+              Inquiry details
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* Action bar (no bg — blends with page) */}
         <div className="px-4 md:px-8 py-4 shrink-0">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedId(null)}
+                className="text-sm text-gray-400 hover:text-gray-700 transition-colors leading-none"
+              >
+                 <ArrowLeftCircle size={24} />
+              </button>
               <Avatar name={creative?.full_name} avatarUrl={creative?.avatar_url} size="lg" />
               <div>
                 <p className="text-sm font-semibold text-gray-900 leading-tight">{creative?.full_name}</p>
@@ -140,14 +146,14 @@ export default function FounderMessagesPage() {
                   <button
                     onClick={() => setStatus('declined')}
                     disabled={actioning}
-                    className="text-xs font-medium text-gray-600 border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className="text-xs font-medium text-gray-600 border bg-[#F2E6E8] border-maroon px-4 py-2 rounded-md hover:bg-maroon/10 transition-colors disabled:opacity-50"
                   >
                     Not a fit
                   </button>
                   <button
                     onClick={() => setStatus('hired')}
                     disabled={actioning}
-                    className="text-xs font-medium bg-[#6b1d2b] text-white px-4 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50"
+                    className="text-xs font-medium bg-[#6b1d2b] text-white px-4 py-2 rounded-md hover:bg-[#4e1520] transition-colors disabled:opacity-50"
                   >
                     Confirm hire
                   </button>
@@ -265,7 +271,7 @@ export default function FounderMessagesPage() {
 
       {/* Persistent header */}
       <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
-        <h1 className="font-editorial text-2xl text-gray-900">Your Messages</h1>
+        <h1 className="font-editorial text-2xl text-gray-900">Your Inquiries</h1>
       </div>
 
       <div className="p-4 md:p-8 flex-1 overflow-y-auto">
@@ -313,11 +319,15 @@ export default function FounderMessagesPage() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 text-center py-16">
-            <MessageSquare size={36} className="mx-auto text-gray-200 mb-3" />
-            <p className="text-sm text-gray-600 font-medium mb-1">No messages yet</p>
+            <MousePointer size={36} className="mx-auto text-maroon bg-[#F2E6E8] p-2 rounded-full mb-3" />
+            <p className="text-xl font-editorial text-gray-600 font-medium mb-1">No inquiries sent yet</p>
             <p className="text-xs text-gray-400">
-              When you send an inquiry to a creative, it will appear here.
+              When you are ready to reach out to a talent, tap Hire on their profile.
+              Your active inquiries will appear here so you can track every conversation.
             </p>
+            <button className="mt-4 bg-maroon text-white px-4 py-2 rounded-lg">
+              Browse Talents
+            </button>
           </div>
         )}
       </div>
