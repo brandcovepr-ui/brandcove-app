@@ -38,7 +38,7 @@ export default function SettingsPage() {
 
   // Fetch auth email client-side
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => {
+    createClient().auth.getUser().then(({ data }: { data: { user: { email?: string } | null } }) => {
       if (data?.user?.email) setUserEmail(data.user.email)
     })
   }, [])

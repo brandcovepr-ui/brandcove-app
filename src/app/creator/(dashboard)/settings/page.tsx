@@ -44,7 +44,7 @@ export default function CreatorSettingsPage() {
 
   // Fetch real email + pre-fill form once profile loads
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => {
+    createClient().auth.getUser().then(({ data }: { data: { user: { email?: string } | null } }) => {
       if (data.user?.email) setUserEmail(data.user.email)
     })
   }, [])

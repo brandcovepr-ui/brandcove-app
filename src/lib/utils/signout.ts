@@ -49,7 +49,7 @@ export async function signOutUser(clearState: () => void): Promise<void> {
   // Step 5: best-effort token invalidation — fire and forget
   try {
     const supabase = createClient()
-    supabase.auth.signOut().catch((err) =>
+    supabase.auth.signOut().catch((err: unknown) =>
       console.error('[signOut] SDK signOut (background):', err)
     )
   } catch {

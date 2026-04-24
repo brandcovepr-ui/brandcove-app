@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { Profile } from '@/lib/types'
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 
 // Module-level flag so concurrent hook instances don't all race to load
 let loadingProfile = false
@@ -45,7 +46,7 @@ export function useUser() {
   // Auth state changes in a separate stable effect
   useEffect(() => {
     const supabase = createClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (event === 'SIGNED_OUT') {
         setProfile(null)
       } else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {

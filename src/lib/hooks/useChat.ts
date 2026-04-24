@@ -62,7 +62,7 @@ export function useChat(inquiryId: string) {
           table: 'messages',
           filter: `inquiry_id=eq.${inquiryId}`,
         },
-        async (payload) => {
+        async (payload: { new: { id: string } }) => {
           const { data } = await supabase
             .from('messages')
             .select('*, sender:profiles(id, full_name, avatar_url)')
@@ -84,7 +84,7 @@ export function useChat(inquiryId: string) {
           table: 'inquiries',
           filter: `id=eq.${inquiryId}`,
         },
-        (payload) => {
+        (payload: { new: { status: string } }) => {
           setInquiryStatus(payload.new.status)
         }
       )
@@ -96,7 +96,7 @@ export function useChat(inquiryId: string) {
           table: 'offers',
           filter: `inquiry_id=eq.${inquiryId}`,
         },
-        (payload) => {
+        (payload: { new: { status: string } }) => {
           // New offer always becomes the latest
           setLatestOfferStatus(payload.new.status)
         }
