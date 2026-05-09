@@ -56,11 +56,11 @@ export default function CreativeProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-5xl animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-48 mb-7" />
-        <div className="flex gap-6 items-start">
-          <div className="w-64 h-96 bg-gray-200 rounded-2xl shrink-0" />
-          <div className="flex-1 space-y-4">
+      <div className="p-4 md:p-8 max-w-5xl animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-48 mb-5 md:mb-7" />
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+          <div className="w-full md:w-64 h-64 md:h-96 bg-gray-200 rounded-2xl shrink-0" />
+          <div className="flex-1 w-full space-y-4">
             <div className="h-40 bg-gray-200 rounded-2xl" />
             <div className="h-72 bg-gray-200 rounded-2xl" />
           </div>
@@ -74,9 +74,9 @@ export default function CreativeProfilePage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-4 md:p-8 max-w-5xl">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm mb-7">
+      <div className="flex items-center gap-2 text-sm mb-5 md:mb-7">
         <Link href="/founder/browse" className="text-gray-400 hover:text-gray-700 transition-colors">
           Browse talents
         </Link>
@@ -84,9 +84,9 @@ export default function CreativeProfilePage() {
         <span className="font-semibold text-gray-800">{displayName}</span>
       </div>
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
         {/* Left card */}
-        <div className="w-64 shrink-0 bg-white rounded-2xl border border-gray-100 p-6 text-center">
+        <div className="w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 p-6 text-center">
           <div className="w-24 h-24 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 overflow-hidden">
             {(creative as any).avatar_url ? (
               <img src={(creative as any).avatar_url} alt="" className="w-full h-full object-cover" />

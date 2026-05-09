@@ -226,35 +226,35 @@ export default function CreatorInquiriesPage() {
       <div className="flex flex-col h-full min-h-0">
 
         {/* ── Persistent header: breadcrumb ── */}
-        <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
+        <div className="px-4 md:px-8 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedId(null)}
-              className="font-editorial text-2xl text-gray-400 hover:text-gray-700 transition-colors leading-none"
+              className="font-editorial text-lg md:text-2xl text-gray-400 hover:text-gray-700 transition-colors leading-none"
             >
               Inquiries
             </button>
             <ChevronRight size={16} className="text-gray-300 shrink-0" />
-            <span className="font-editorial text-2xl text-gray-900 leading-none truncate">
+            <span className="font-editorial text-lg md:text-2xl text-gray-900 leading-none truncate">
               {companyName || founderName}
             </span>
           </div>
         </div>
 
         {/* ── "Wants to work with you" + action buttons (no bg, blends) ── */}
-        <div className="px-4 md:px-8 py-4 shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <h2 className="text-lg font-bold text-gray-900 leading-snug">
+        <div className="px-4 md:px-8 py-3 md:py-4 shrink-0">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="text-base md:text-lg font-bold text-gray-900 leading-snug">
               {companyName ? (
                 <>
                   <span>{companyName}</span>
-                  <span className="text-gray-400 font-normal text-base"> · {founderName}</span>
+                  <span className="text-gray-400 font-normal text-sm md:text-base"> · {founderName}</span>
                 </>
               ) : founderName}{' '}
               wants to work with you.
             </h2>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {hasPendingOffer && !isDeclined && !isAccepted && (
                 <>
                   <button
@@ -544,8 +544,8 @@ export default function CreatorInquiriesPage() {
     <div className="flex flex-col h-full">
 
       {/* Persistent header */}
-      <div className="px-4 md:px-8 py-8 border-b border-gray-100 shrink-0">
-        <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-8">Your Inquiries</h1>
+      <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">
+        <h1 className="text-2xl font-editorial  font-regular text-gray-900">Your Inquiries</h1>
       </div>
 
       <div className="p-4 md:p-8 flex-1 overflow-y-auto">

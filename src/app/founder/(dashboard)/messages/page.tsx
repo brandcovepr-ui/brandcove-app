@@ -126,7 +126,7 @@ export default function FounderMessagesPage() {
 
         {/* Action bar (no bg — blends with page) */}
         <div className="px-4 md:px-8 py-4 shrink-0">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSelectedId(null)}

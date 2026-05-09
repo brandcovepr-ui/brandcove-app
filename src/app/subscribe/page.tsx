@@ -31,12 +31,17 @@ export default function SubscribePage() {
     setLoading(true)
 
     const supabase = createClient()
-    const [{ data: { user } }, { data: { session } }] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase.auth.getSession(),
-    ])
-
-    if (!user || !session) {
+    // getUser() validates against the Supabase auth server and triggers a
+    // refresh if the access token is expired. getSession() is called after so
+    // it always returns the already-refreshed session — never a stale one.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('Session expired. Please log in again.')
+      setLoading(false)
+      return
+    }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       setError('Session expired. Please log in again.')
       setLoading(false)
       return
@@ -83,7 +88,7 @@ export default function SubscribePage() {
         <div className="flex flex-1 min-h-0">
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-10 py-8">
+          <div className="flex-1 overflow-y-auto px-5 md:px-10 py-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Subscribe to get access</h1>
             <p className="text-sm text-gray-500 mb-6">
               {isCreative

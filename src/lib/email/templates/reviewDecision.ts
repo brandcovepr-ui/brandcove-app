@@ -4,6 +4,8 @@ interface ReviewDecisionParams {
   creativeName: string
   status: 'approved' | 'rejected'
   loginUrl: string
+  subscribeUrl?: string
+  denialReason?: string
 }
 
 export function reviewDecisionSubject(status: 'approved' | 'rejected') {
@@ -12,8 +14,9 @@ export function reviewDecisionSubject(status: 'approved' | 'rejected') {
     : 'Your BrandCove application update'
 }
 
-export function reviewDecisionHtml({ creativeName, status, loginUrl }: ReviewDecisionParams): string {
+export function reviewDecisionHtml({ creativeName, status, loginUrl, subscribeUrl, denialReason }: ReviewDecisionParams): string {
   const isApproved = status === 'approved'
+  const ctaUrl = isApproved ? (subscribeUrl ?? loginUrl) : loginUrl
 
   const content = isApproved ? `
     <h1 style="margin:0 0 24px;font-size:34px;font-weight:700;color:#0a0a0a;line-height:1.2;font-family:Georgia,'Times New Roman',serif;text-align:center;">Complete your setup to start receiving opportunities from founders</h1>
@@ -29,7 +32,7 @@ export function reviewDecisionHtml({ creativeName, status, loginUrl }: ReviewDec
     <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 32px;">
       <tr>
         <td align="center" style="background-color:#6b1d2b;border-radius:100px;">
-          <a href="${loginUrl}" style="display:inline-block;padding:16px 36px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:100px;letter-spacing:0.01em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Finish Setup &amp; Activate Profile</a>
+          <a href="${ctaUrl}" style="display:inline-block;padding:16px 36px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:100px;letter-spacing:0.01em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Finish Setup &amp; Activate Profile</a>
         </td>
       </tr>
     </table>
@@ -39,11 +42,12 @@ export function reviewDecisionHtml({ creativeName, status, loginUrl }: ReviewDec
     <h1 style="margin:0 0 24px;font-size:34px;font-weight:700;color:#0a0a0a;line-height:1.2;font-family:Georgia,'Times New Roman',serif;text-align:center;">Thank you for applying to BrandCove</h1>
     <p style="margin:0 0 12px;font-size:15px;color:#333333;line-height:1.7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Hi ${creativeName},</p>
     <p style="margin:0 0 12px;font-size:15px;color:#333333;line-height:1.7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Thank you for applying to join BrandCove as a creative. After carefully reviewing your profile, we&#39;re unable to approve your application at this time.</p>
+    ${denialReason ? `<p style="margin:0 0 12px;font-size:15px;color:#333333;line-height:1.7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;"><strong>Feedback from our team:</strong> ${denialReason}</p>` : ''}
     <p style="margin:0 0 28px;font-size:15px;color:#333333;line-height:1.7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">You&#39;re welcome to strengthen your portfolio and reapply in the future. We&#39;d love to have you on the platform when the time is right.</p>
     <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 32px;">
       <tr>
         <td align="center" style="background-color:#6b1d2b;border-radius:100px;">
-          <a href="${loginUrl}" style="display:inline-block;padding:16px 36px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:100px;letter-spacing:0.01em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Visit BrandCove</a>
+          <a href="${ctaUrl}" style="display:inline-block;padding:16px 36px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:100px;letter-spacing:0.01em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">Visit BrandCove</a>
         </td>
       </tr>
     </table>

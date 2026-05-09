@@ -43,10 +43,10 @@ export default function CreatorProfileViewPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 animate-pulse space-y-4">
+      <div className="p-4 md:p-8 animate-pulse space-y-4">
         <div className="h-8 w-48 bg-gray-100 rounded" />
-        <div className="flex gap-6">
-          <div className="w-56 h-80 bg-white rounded-xl border border-gray-100" />
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+          <div className="w-full md:w-56 h-48 md:h-80 bg-white rounded-xl border border-gray-100" />
           <div className="flex-1 space-y-4">
             <div className="h-40 bg-white rounded-xl border border-gray-100" />
             <div className="h-64 bg-white rounded-xl border border-gray-100" />
@@ -57,9 +57,9 @@ export default function CreatorProfileViewPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5 md:mb-6 gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
         <Link
           href="/creator/profile/edit"
@@ -69,10 +69,10 @@ export default function CreatorProfileViewPage() {
         </Link>
       </div>
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
 
         {/* Left card */}
-        <div className="w-56 shrink-0 bg-white rounded-xl border border-gray-100 p-6 flex flex-col items-center text-center">
+        <div className="w-full md:w-56 shrink-0 bg-white rounded-xl border border-gray-100 p-6 flex flex-col items-center text-center">
           <div className="w-20 h-20 rounded-full bg-[#6b1d2b] flex items-center justify-center text-white text-2xl font-bold mb-3 overflow-hidden">
             {profile?.avatar_url
               ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />

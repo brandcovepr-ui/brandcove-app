@@ -12,13 +12,13 @@ function getSupabaseAdmin() {
 
 /**
  * POST /api/admin/review
- * Body: { creative_id: string, status: 'approved' | 'rejected' }
+ * Body: { creative_id: string, status: 'approved' | 'rejected', denial_reason?: string }
  *
  * Updates the creative's review_status and sends them a decision email.
  * Requires the caller to be an admin (verified server-side via their session).
  */
 export async function POST(req: NextRequest) {
-  const { creative_id, status } = await req.json()
+  const { creative_id, status, denial_reason } = await req.json()
 
   if (!creative_id || !['approved', 'rejected'].includes(status)) {
     return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Update review_status
+  // Update review_status on profiles
   const { error: updateError } = await getSupabaseAdmin()
     .from('profiles')
     .update({ review_status: status })
@@ -55,6 +55,19 @@ export async function POST(req: NextRequest) {
   if (updateError) {
     return NextResponse.json({ error: 'Failed to update status' }, { status: 500 })
   }
+
+  // Store review notes (denial reason) and reviewed_at on creative_profiles
+  const reviewUpdate: Record<string, unknown> = { reviewed_at: new Date().toISOString() }
+  if (status === 'rejected' && denial_reason?.trim()) {
+    reviewUpdate.review_notes = denial_reason.trim()
+  } else if (status === 'approved') {
+    reviewUpdate.review_notes = null
+  }
+
+  await getSupabaseAdmin()
+    .from('creative_profiles')
+    .update(reviewUpdate)
+    .eq('id', creative_id)
 
   // Get creative's email + name
   const { data: creativeAuth } = await getSupabaseAdmin().auth.admin.getUserById(creative_id)
@@ -67,14 +80,22 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (recipientEmail) {
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL}/login`
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+    const loginUrl = `${appUrl}/login`
+    const subscribeUrl = `${appUrl}/subscribe`
     const creativeName = creativeProfile?.full_name?.split(' ')[0] ?? 'there'
 
     const { error: emailError } = await getResend().emails.send({
       from: FROM,
       to: recipientEmail,
       subject: reviewDecisionSubject(status),
-      html: reviewDecisionHtml({ creativeName, status, loginUrl }),
+      html: reviewDecisionHtml({
+        creativeName,
+        status,
+        loginUrl,
+        subscribeUrl,
+        denialReason: status === 'rejected' && denial_reason?.trim() ? denial_reason.trim() : undefined,
+      }),
     })
 
     if (emailError) {

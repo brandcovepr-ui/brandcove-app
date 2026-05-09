@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-import { Upload, X, ImageIcon, FileText, Film } from 'lucide-react'
+import { Upload, X, ImageIcon, FileText, Film, Plus, Link as LinkIcon } from 'lucide-react'
 import Image from 'next/image'
 
 const DISCIPLINES = [
@@ -17,6 +17,12 @@ const DISCIPLINES = [
   'Sales Rep',
   'Customer Service Rep',
   'Creative Assistant',
+  'Copywriter',
+  'Video Editor',
+  'Photographer',
+  'Brand Strategist',
+  'Content Creator',
+  'UI/UX Designer',
 ]
 
 const SKILLS_BY_DISCIPLINE: Record<string, string[]> = {
@@ -55,11 +61,28 @@ interface UploadedFile {
   previewUrl?: string
 }
 
+interface PortfolioLink {
+  label: string
+  url: string
+}
+
+const MAX_PORTFOLIO_LINKS = 5
+
+function isValidUrl(value: string): boolean {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function CreativeOnboardingForm() {
   const router = useRouter()
   const { profile } = useUser()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   // Step 1
   const [discipline, setDiscipline] = useState('')
@@ -78,7 +101,11 @@ export function CreativeOnboardingForm() {
   const MAX_FILE_SIZE_MB = 50
   const UPLOAD_TIMEOUT_MS = 30_000
 
-  // Step 4
+  // Step 4: Portfolio links
+  const [portfolioLinks, setPortfolioLinks] = useState<PortfolioLink[]>([{ label: '', url: '' }])
+  const [portfolioErrors, setPortfolioErrors] = useState<Array<{ label?: string; url?: string }>>([{}])
+
+  // Step 5
   const [hourlyRate, setHourlyRate] = useState('')
   const [availability, setAvailability] = useState('available')
 
@@ -171,12 +198,49 @@ export function CreativeOnboardingForm() {
     setStep(3)
   }
 
+  // Portfolio link helpers
+  function updatePortfolioLink(index: number, field: 'label' | 'url', value: string) {
+    setPortfolioLinks(prev => prev.map((link, i) => i === index ? { ...link, [field]: value } : link))
+    setPortfolioErrors(prev => prev.map((err, i) => i === index ? { ...err, [field]: undefined } : err))
+  }
+
+  function addPortfolioLink() {
+    if (portfolioLinks.length >= MAX_PORTFOLIO_LINKS) return
+    setPortfolioLinks(prev => [...prev, { label: '', url: '' }])
+    setPortfolioErrors(prev => [...prev, {}])
+  }
+
+  function removePortfolioLink(index: number) {
+    setPortfolioLinks(prev => prev.filter((_, i) => i !== index))
+    setPortfolioErrors(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function validateAndAdvancePortfolioStep() {
+    const newErrors: Array<{ label?: string; url?: string }> = portfolioLinks.map(link => {
+      const err: { label?: string; url?: string } = {}
+      if (!link.label.trim()) err.label = 'Label required'
+      if (!link.url.trim()) {
+        err.url = 'URL required'
+      } else if (!isValidUrl(link.url.trim())) {
+        err.url = 'Enter a valid URL (e.g. https://...)'
+      }
+      return err
+    })
+
+    setPortfolioErrors(newErrors)
+    const hasErrors = newErrors.some(e => e.label || e.url)
+    if (!hasErrors) setStep(5)
+  }
+
   async function finishOnboarding() {
     if (!step2Data || !profile?.id) return
     setLoading(true)
+    setSubmitError('')
     const supabase = createClient()
 
-    await supabase.from('creative_profiles').upsert({
+    const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
+
+    const { error: profileError } = await supabase.from('creative_profiles').upsert({
       id: profile.id,
       discipline,
       skills: selectedSkills,
@@ -184,13 +248,26 @@ export function CreativeOnboardingForm() {
       location: step2Data.location || null,
       hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
       availability,
+      portfolio_links: cleanLinks,
     })
 
-    await supabase.from('profiles').update({
+    if (profileError) {
+      setSubmitError('Something went wrong saving your profile. Please try again.')
+      setLoading(false)
+      return
+    }
+
+    const { error: bioError } = await supabase.from('profiles').update({
       bio: step2Data.bio,
       onboarding_complete: true,
       review_status: 'pending',
     }).eq('id', profile.id)
+
+    if (bioError) {
+      setSubmitError('Something went wrong saving your profile. Please try again.')
+      setLoading(false)
+      return
+    }
 
     if (uploads.length > 0) {
       await supabase.from('work_samples').insert(
@@ -203,12 +280,19 @@ export function CreativeOnboardingForm() {
       )
     }
 
+    // Notify admin — fire and forget
+    fetch('/api/email/creator-application', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creative_id: profile.id }),
+    }).catch(() => {/* best effort */})
+
     setLoading(false)
     router.push('/creator/pending-review')
   }
 
-  const totalSteps = 4
-  const stepLabels = ['Your Role', 'Bio & Experience', 'Show Your Work', 'Your Rate']
+  const totalSteps = 5
+  const stepLabels = ['Your Role', 'Bio & Experience', 'Show Your Work', 'Portfolio Links', 'Your Rate']
 
   return (
     <div className="auth-bg h-screen w-full">
@@ -403,16 +487,101 @@ thing founders will look at.</p>
                 <ProgressDots current={3} total={totalSteps} onDotClick={setStep} />
                 <button
                   onClick={() => setStep(4)}
-                  disabled={uploads.length === 0}
-                  className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-40"
+                  className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
-                  Continue
+                  {uploads.length > 0 ? 'Continue' : 'Skip for now'}
                 </button>
               </>
             )}
 
-            {/* Step 4: Rate */}
+            {/* Step 4: Portfolio Links */}
             {step === 4 && (
+              <>
+                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Your portfolio links</h1>
+                <p className="text-sm text-gray-500 mb-6">
+                  Add links to your online work — portfolio site, Behance, Dribbble, GitHub, Instagram, YouTube, or anywhere else your best work lives. Add at least 1 and up to 5 links.
+                </p>
+
+                <div className="space-y-4 mb-5">
+                  {portfolioLinks.map((link, i) => (
+                    <div key={i} className="rounded-xl border border-gray-200 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <LinkIcon size={13} className="text-gray-400" />
+                          <span className="text-xs font-medium text-gray-700">Link {i + 1}</span>
+                        </div>
+                        {portfolioLinks.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePortfolioLink(i)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={e => updatePortfolioLink(i, 'label', e.target.value)}
+                          placeholder="e.g. My design portfolio, Instagram page, GitHub profile"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        />
+                        {portfolioErrors[i]?.label && (
+                          <p className="text-xs text-red-500 mt-1">{portfolioErrors[i].label}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">URL</label>
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={e => updatePortfolioLink(i, 'url', e.target.value)}
+                          placeholder="https://"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        />
+                        {portfolioErrors[i]?.url && (
+                          <p className="text-xs text-red-500 mt-1">{portfolioErrors[i].url}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {portfolioLinks.length < MAX_PORTFOLIO_LINKS && (
+                  <button
+                    type="button"
+                    onClick={addPortfolioLink}
+                    className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-5"
+                  >
+                    <Plus size={15} />
+                    Add another link
+                  </button>
+                )}
+
+                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                <button
+                  onClick={validateAndAdvancePortfolioStep}
+                  className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPortfolioLinks([]); setPortfolioErrors([]); setStep(5) }}
+                  className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-2 py-1 transition-colors"
+                >
+                  Skip for now
+                </button>
+              </>
+            )}
+
+            {/* Step 5: Rate & Availability */}
+            {step === 5 && (
               <>
                 <h1 className="text-3xl font-editorial text-gray-900 mb-1">Set your rate &amp; availability</h1>
                 <p className="text-sm text-gray-500 mb-6">Founders will see this on your profile when browsing.</p>
@@ -460,7 +629,7 @@ thing founders will look at.</p>
                   </div>
                 </div>
 
-                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={5} total={totalSteps} onDotClick={setStep} />
                 <button
                   onClick={finishOnboarding}
                   disabled={loading}
@@ -468,6 +637,12 @@ thing founders will look at.</p>
                 >
                   {loading ? 'Submitting…' : 'Submit for Review'}
                 </button>
+                {submitError && (
+                  <p className="text-xs text-red-500 text-center mt-2">{submitError}</p>
+                )}
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  Submitting sends your profile to our team for review. You won&apos;t have access until approved.
+                </p>
               </>
             )}
           </div>
@@ -479,6 +654,7 @@ thing founders will look at.</p>
                 step === 1 ? '/OnboardingMascot.png'
                 : step === 2 ? '/Welcome Mascot.svg'
                 : step === 3 ? '/Search Mascot.png'
+                : step === 4 ? '/OnboardingMascot.png'
                 : '/SubscribeMascot.png'
               }
               alt=""

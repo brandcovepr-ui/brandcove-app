@@ -136,9 +136,9 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="p-8 relative">
+    <div className="p-4 md:p-8 relative">
       {/* Page heading */}
-      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-8">Account Settings</h1>
+      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-6 md:mb-8">Account Settings</h1>
 
       {/* Saved toast */}
       {saved && (
@@ -148,14 +148,14 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
         {/* Sidebar tabs */}
-        <div className="w-52 shrink-0 bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="w-full md:w-52 shrink-0 bg-white rounded-xl border border-gray-100 overflow-hidden flex md:flex-col">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`w-full text-left px-4 py-3 text-sm transition-colors border-b border-gray-50 last:border-0 ${
+              className={`flex-1 md:flex-none text-center md:text-left px-3 md:px-4 py-3 text-sm transition-colors border-r md:border-r-0 md:border-b border-gray-50 last:border-0 ${
                 tab === t.id
                   ? 'bg-gray-100 font-medium text-gray-900'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
@@ -167,7 +167,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content card */}
-        <div className="flex-1 bg-white rounded-xl border border-gray-100 p-6 max-w-xl">
+        <div className="flex-1 w-full bg-white rounded-xl border border-gray-100 p-5 md:p-6 max-w-xl">
 
           {tab === 'profile' && (
             <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-5">
@@ -184,7 +184,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Full Name + Email */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
                   <input
@@ -206,7 +206,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Company Name + Industry */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Company Name</label>
                   <input

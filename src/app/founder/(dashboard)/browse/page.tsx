@@ -140,7 +140,7 @@ export default function BrowsePage() {
   const showSkeleton = isLoading || (isFetching && creatives.length === 0)
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-6">Browse Talent</h1>
 
       {/* Filters */}

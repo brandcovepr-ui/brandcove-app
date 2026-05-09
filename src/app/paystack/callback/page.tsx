@@ -18,15 +18,11 @@ function CallbackHandler() {
 
     async function verify() {
       const supabase = createClient()
-      const [{ data: { user } }, { data: { session } }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.auth.getSession(),
-      ])
-
-      if (!user || !session) {
-        router.replace('/login')
-        return
-      }
+      // getUser() validates + refreshes; getSession() then returns the fresh token.
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.replace('/login'); return }
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.replace('/login'); return }
 
       try {
         const res = await fetch('/api/paystack/verify', {

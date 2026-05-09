@@ -195,9 +195,9 @@ export default function CreatorProfileEditPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between gap-3 mb-5">
         <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
         <div className="flex items-center gap-3">
           <Link
@@ -238,7 +238,7 @@ export default function CreatorProfileEditPage() {
         </div>
 
         {/* Full Name + Role */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Full Name</label>
             <input
@@ -366,7 +366,7 @@ export default function CreatorProfileEditPage() {
             <p className="text-xs font-medium text-gray-700 mb-3">
               Uploaded files ({workSamples.length}/{MAX_FILES})
             </p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {workSamples.map(sample => (
                 <div key={sample.id} className="relative group rounded-xl overflow-hidden border border-gray-100 aspect-video">
                   {sample.file_type === 'image' ? (

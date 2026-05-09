@@ -45,8 +45,8 @@ export default function ShortlistPage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-8">Your Shortlist</h1>
+    <div className="p-4 md:p-8">
+      <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-6 md:mb-8">Your Shortlist</h1>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -56,7 +56,8 @@ export default function ShortlistPage() {
         </div>
       ) : shortlisted && shortlisted.length > 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_auto] gap-4 px-6 py-3 border-b border-gray-100">
+          {/* Desktop table header */}
+          <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_auto] gap-4 px-6 py-3 border-b border-gray-100">
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Talent</p>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Role</p>
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Rate</p>
@@ -68,45 +69,65 @@ export default function ShortlistPage() {
             const creative = item.creative
             const cp = creative?.creative_profiles
             return (
-              <div
-                key={item.id}
-                className="grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_auto] gap-4 items-center px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-sm font-semibold shrink-0 overflow-hidden">
+              <div key={item.id} className="border-b border-gray-50 last:border-0">
+                {/* Desktop row */}
+                <div className="hidden sm:grid grid-cols-[2fr_1.5fr_1.5fr_1.5fr_auto] gap-4 items-center px-6 py-4 hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-sm font-semibold shrink-0 overflow-hidden">
+                      {creative?.avatar_url
+                        ? <img src={creative.avatar_url} alt="" className="w-full h-full object-cover" />
+                        : creative?.full_name?.[0]?.toUpperCase() || 'C'
+                      }
+                    </div>
+                    <Link href={`/founder/profile/${creative?.id}`} className="text-sm font-medium text-gray-900 hover:text-[#6b1d2b] transition-colors">
+                      {abbrevName(creative?.full_name)}
+                    </Link>
+                  </div>
+                  <p className="text-sm text-gray-600">{cp?.discipline || '—'}</p>
+                  <p className="text-sm text-gray-700 font-medium">
+                    {cp?.hourly_rate ? `₦${(cp.hourly_rate / 1000).toFixed(0)}k/mo` : '—'}
+                  </p>
+                  <p className="text-sm text-gray-500">{format(new Date(item.created_at), 'MMM d, yyyy')}</p>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => removeFromShortlist(creative?.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => setInquiryTarget({ id: creative?.id, name: creative?.full_name || 'Creative' })}
+                      className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-lg hover:bg-[#4e1520] transition-colors whitespace-nowrap"
+                    >
+                      Send Inquiry
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile card */}
+                <div className="sm:hidden flex items-center gap-3 px-4 py-4">
+                  <div className="w-10 h-10 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-sm font-semibold shrink-0 overflow-hidden">
                     {creative?.avatar_url
                       ? <img src={creative.avatar_url} alt="" className="w-full h-full object-cover" />
                       : creative?.full_name?.[0]?.toUpperCase() || 'C'
                     }
                   </div>
-                  <Link href={`/founder/profile/${creative?.id}`} className="text-sm font-medium text-gray-900 hover:text-[#6b1d2b] transition-colors">
-                    {abbrevName(creative?.full_name)}
-                  </Link>
-                </div>
-
-                <p className="text-sm text-gray-600">{cp?.discipline || '—'}</p>
-
-                <p className="text-sm text-gray-700 font-medium">
-                  {cp?.hourly_rate ? `₦${(cp.hourly_rate / 1000).toFixed(0)}k/mo` : '—'}
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  {format(new Date(item.created_at), 'MMM d, yyyy')}
-                </p>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => removeFromShortlist(creative?.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => setInquiryTarget({ id: creative?.id, name: creative?.full_name || 'Creative' })}
-                    className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-lg hover:bg-[#4e1520] transition-colors whitespace-nowrap"
-                  >
-                    Send Inquiry
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/founder/profile/${creative?.id}`} className="text-sm font-medium text-gray-900 hover:text-[#6b1d2b] transition-colors">
+                      {abbrevName(creative?.full_name)}
+                    </Link>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {cp?.discipline || '—'}{cp?.hourly_rate ? ` · ₦${(cp.hourly_rate / 1000).toFixed(0)}k/mo` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => removeFromShortlist(creative?.id)} className="text-gray-400 hover:text-red-500 transition-colors p-1">
+                      <Trash2 size={15} />
+                    </button>
+                    <button
+                      onClick={() => setInquiryTarget({ id: creative?.id, name: creative?.full_name || 'Creative' })}
+                      className="bg-[#6b1d2b] text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-[#4e1520] transition-colors whitespace-nowrap"
+                    >
+                      Inquire
+                    </button>
+                  </div>
                 </div>
               </div>
             )

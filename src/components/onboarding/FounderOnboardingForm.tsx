@@ -105,15 +105,11 @@ export function FounderOnboardingForm() {
     setPaymentError('')
 
     const supabase = createClient()
-    const [{ data: { user } }, { data: { session } }] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase.auth.getSession(),
-    ])
-
-    if (!user || !session) {
-      setLoading(false)
-      return
-    }
+    // getUser() validates + refreshes; getSession() then returns the fresh token.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setLoading(false); return }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setLoading(false); return }
 
     try {
       const res = await fetch('/api/paystack/initialize', {

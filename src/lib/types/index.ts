@@ -37,11 +37,17 @@ export interface FounderProfile {
   company_stage: string | null
 }
 
+export interface PortfolioLink {
+  label: string
+  url: string
+}
+
 export interface CreativeProfile {
   id: string
   discipline: string
   skills: string[]
   portfolio_url: string | null
+  portfolio_links: PortfolioLink[]
   hourly_rate: number | null
   availability: AvailabilityStatus
   location: string | null

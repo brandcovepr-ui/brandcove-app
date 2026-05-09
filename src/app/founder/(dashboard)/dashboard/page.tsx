@@ -151,16 +151,16 @@ export default function DashboardPage() {
   })()
 
   return (
-    <div className="flex flex-col h-full p-8 gap-8">
+    <div className="flex flex-col h-full p-4 md:p-8 gap-4 md:gap-8">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex items-start sm:items-center justify-between gap-3 shrink-0">
         <div>
-          <h1 className="text-2xl font-regular font-editorial text-gray-900">Welcome back, {firstName}</h1>
+          <h1 className="text-xl md:text-2xl font-regular font-editorial text-gray-900">Welcome back, {firstName}</h1>
           <p className="text-sm text-gray-500 mt-1">Here is what is happening with your hiring pipeline today.</p>
         </div>
         <Link
           href="/founder/browse"
-          className="flex items-center gap-2 bg-[#6b1d2b] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors"
+          className="flex items-center gap-2 bg-[#6b1d2b] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#4e1520] transition-colors shrink-0"
         >
           <Plus size={16} />
           Hire Talent
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4 shrink-0">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 shrink-0">
         <StatCard
           label="Shortlisted Talents"
           value={data?.shortlistCount ?? 0}

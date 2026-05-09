@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow } from 'date-fns'
-import { CheckCircle, XCircle, Clock, ExternalLink, ChevronDown, ChevronUp, FileText, Film, ImageIcon } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, ExternalLink, ChevronDown, ChevronUp, FileText, Film, ImageIcon, Link as LinkIcon, MapPin, Briefcase, Calendar, DollarSign } from 'lucide-react'
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
@@ -26,7 +26,7 @@ function useApplications(filter: ReviewStatus | 'all') {
         .from('profiles')
         .select(`
           id, full_name, created_at, review_status, bio, avatar_url,
-          creative_profiles(discipline, skills, years_experience, portfolio_url, hourly_rate, location, availability),
+          creative_profiles(discipline, skills, years_experience, portfolio_url, portfolio_links, hourly_rate, location, availability, review_notes),
           work_samples(id, url, title, file_type)
         `)
         .eq('role', 'creative')
@@ -43,14 +43,26 @@ function useApplications(filter: ReviewStatus | 'all') {
   })
 }
 
+interface DenyDialogState {
+  id: string
+  reason: string
+}
+
+interface ApproveDialogState {
+  id: string
+  name: string
+}
+
 export default function AdminApplicationsPage() {
   const router = useRouter()
   const { profile, loading: userLoading } = useUser()
   const [filter, setFilter] = useState<ReviewStatus | 'all'>('pending')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [denyDialog, setDenyDialog] = useState<DenyDialogState | null>(null)
+  const [approveDialog, setApproveDialog] = useState<ApproveDialogState | null>(null)
   const queryClient = useQueryClient()
-  const { data: applications = [], isLoading } = useApplications(filter)
+  const { data: applications = [], isLoading, error: queryError } = useApplications(filter)
 
   // Guard: only admins can see this page
   useEffect(() => {
@@ -59,7 +71,7 @@ export default function AdminApplicationsPage() {
     }
   }, [profile, userLoading, router])
 
-  async function updateStatus(id: string, status: 'approved' | 'rejected') {
+  async function updateStatus(id: string, status: 'approved' | 'rejected', denial_reason?: string) {
     setUpdating(id)
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -70,11 +82,12 @@ export default function AdminApplicationsPage() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session?.access_token ?? ''}`,
       },
-      body: JSON.stringify({ creative_id: id, status }),
+      body: JSON.stringify({ creative_id: id, status, denial_reason }),
     })
 
     queryClient.invalidateQueries({ queryKey: ['admin-applications'] })
     setUpdating(null)
+    setDenyDialog(null)
     if (expanded === id) setExpanded(null)
   }
 
@@ -90,7 +103,78 @@ export default function AdminApplicationsPage() {
   if (!profile || profile.role !== 'admin') return null
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
+      {/* Approve confirmation modal */}
+      {approveDialog && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                <CheckCircle size={18} className="text-green-600" />
+              </div>
+              <h2 className="text-base font-semibold text-gray-900">Approve this application?</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              <span className="font-medium text-gray-700">{approveDialog.name}</span> will receive an email letting them know they&apos;ve been approved and can now subscribe to access the platform.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setApproveDialog(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { updateStatus(approveDialog.id, 'approved'); setApproveDialog(null) }}
+                disabled={updating === approveDialog.id}
+                className="flex items-center gap-1.5 bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                <CheckCircle size={14} />
+                {updating === approveDialog.id ? 'Approving…' : 'Yes, approve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deny reason modal */}
+      {denyDialog && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <XCircle size={18} className="text-red-500" />
+              </div>
+              <h2 className="text-base font-semibold text-gray-900">Deny this application?</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">Optionally add a reason — it will be included in the email sent to the creator.</p>
+            <textarea
+              value={denyDialog.reason}
+              onChange={e => setDenyDialog(d => d ? { ...d, reason: e.target.value } : null)}
+              rows={3}
+              placeholder="e.g. Portfolio doesn't meet our current quality bar — feel free to reapply after adding more work samples."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDenyDialog(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => updateStatus(denyDialog.id, 'rejected', denyDialog.reason || undefined)}
+                disabled={updating === denyDialog.id}
+                className="flex items-center gap-1.5 bg-red-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                <XCircle size={14} />
+                {updating === denyDialog.id ? 'Denying…' : 'Confirm Deny'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Creator Applications</h1>
@@ -121,6 +205,11 @@ export default function AdminApplicationsPage() {
             <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 animate-pulse h-20" />
           ))}
         </div>
+      ) : queryError ? (
+        <div className="text-center py-20 bg-white rounded-xl border border-red-100">
+          <p className="text-red-500 text-sm font-medium mb-1">Failed to load applications</p>
+          <p className="text-gray-400 text-xs">{(queryError as Error).message}</p>
+        </div>
       ) : applications.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
           <Clock size={40} className="mx-auto text-gray-200 mb-3" />
@@ -131,6 +220,7 @@ export default function AdminApplicationsPage() {
           {applications.map((app: any) => {
             const cp = Array.isArray(app.creative_profiles) ? app.creative_profiles[0] : app.creative_profiles
             const samples: any[] = app.work_samples ?? []
+            const portfolioLinks: Array<{ label: string; url: string }> = cp?.portfolio_links ?? []
             const status = (app.review_status || 'pending') as ReviewStatus
             const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending
             const isExpanded = expanded === app.id
@@ -178,7 +268,7 @@ export default function AdminApplicationsPage() {
 
                   {/* Work samples count */}
                   {samples.length > 0 && (
-                    <span className="text-xs text-gray-400 shrink-0">{samples.length} sample{samples.length !== 1 ? 's' : ''}</span>
+                    <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{samples.length} sample{samples.length !== 1 ? 's' : ''}</span>
                   )}
 
                   {/* Status badge */}
@@ -191,26 +281,26 @@ export default function AdminApplicationsPage() {
                     {status === 'pending' && (
                       <>
                         <button
-                          onClick={() => updateStatus(app.id, 'approved')}
+                          onClick={() => setApproveDialog({ id: app.id, name: app.full_name ?? 'this creator' })}
                           disabled={isUpdating}
-                          className="flex items-center gap-1.5 bg-green-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 bg-green-600 text-white text-xs font-medium px-2 sm:px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                         >
                           <CheckCircle size={13} />
-                          Approve
+                          <span className="hidden sm:inline">Approve</span>
                         </button>
                         <button
-                          onClick={() => updateStatus(app.id, 'rejected')}
+                          onClick={() => setDenyDialog({ id: app.id, reason: '' })}
                           disabled={isUpdating}
-                          className="flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 bg-red-500 text-white text-xs font-medium px-2 sm:px-3 py-1.5 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
                         >
                           <XCircle size={13} />
-                          Reject
+                          <span className="hidden sm:inline">Deny</span>
                         </button>
                       </>
                     )}
                     {status === 'approved' && (
                       <button
-                        onClick={() => updateStatus(app.id, 'rejected')}
+                        onClick={() => setDenyDialog({ id: app.id, reason: '' })}
                         disabled={isUpdating}
                         className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors disabled:opacity-50"
                       >
@@ -219,7 +309,7 @@ export default function AdminApplicationsPage() {
                     )}
                     {status === 'rejected' && (
                       <button
-                        onClick={() => updateStatus(app.id, 'approved')}
+                        onClick={() => setApproveDialog({ id: app.id, name: app.full_name ?? 'this creator' })}
                         disabled={isUpdating}
                         className="text-xs text-green-600 hover:text-green-800 font-medium transition-colors disabled:opacity-50"
                       >
@@ -239,67 +329,146 @@ export default function AdminApplicationsPage() {
 
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="border-t border-gray-50 px-5 py-5 bg-gray-50/50 space-y-5">
+                  <div className="border-t border-gray-100 px-5 py-6 bg-gray-50/50 space-y-6">
+
+                    {/* Denial reason banner */}
+                    {status === 'rejected' && cp?.review_notes && (
+                      <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                        <p className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1">Denial reason</p>
+                        <p className="text-sm text-red-700 leading-relaxed">{cp.review_notes}</p>
+                      </div>
+                    )}
+
                     {/* Bio */}
                     {app.bio && (
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Bio</p>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Bio</p>
                         <p className="text-sm text-gray-700 leading-relaxed">{app.bio}</p>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-                      {/* Skills */}
-                      {cp?.skills?.length > 0 && (
-                        <div>
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Skills</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {cp.skills.map((skill: string) => (
-                              <span key={skill} className="text-xs border border-gray-200 rounded-full px-2.5 py-0.5 text-gray-600">
-                                {skill}
-                              </span>
-                            ))}
+                    {/* Profile details grid */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Profile Details</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {cp?.discipline && (
+                          <div className="flex items-start gap-2">
+                            <Briefcase size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-gray-400 mb-0.5">Discipline</p>
+                              <p className="text-sm font-medium text-gray-800">{cp.discipline}</p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Portfolio link */}
-                      {cp?.portfolio_url && (
-                        <div>
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Portfolio</p>
-                          <a
-                            href={cp.portfolio_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-[#6b1d2b] hover:underline font-medium"
-                          >
-                            <ExternalLink size={12} />
-                            View portfolio
-                          </a>
-                        </div>
-                      )}
-
-                      {/* Rate */}
-                      {cp?.hourly_rate != null && (
-                        <div>
-                          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Monthly Rate</p>
-                          <p className="text-sm font-semibold text-gray-900">₦{Number(cp.hourly_rate).toLocaleString()}</p>
-                        </div>
-                      )}
+                        )}
+                        {cp?.years_experience != null && (
+                          <div className="flex items-start gap-2">
+                            <Calendar size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-gray-400 mb-0.5">Experience</p>
+                              <p className="text-sm font-medium text-gray-800">
+                                {cp.years_experience}{cp.years_experience >= 10 ? '+' : ''} {cp.years_experience === 1 ? 'year' : 'years'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {cp?.location && (
+                          <div className="flex items-start gap-2">
+                            <MapPin size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-gray-400 mb-0.5">Location</p>
+                              <p className="text-sm font-medium text-gray-800">{cp.location}</p>
+                            </div>
+                          </div>
+                        )}
+                        {cp?.hourly_rate != null && (
+                          <div className="flex items-start gap-2">
+                            <DollarSign size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-gray-400 mb-0.5">Monthly Rate</p>
+                              <p className="text-sm font-semibold text-gray-800">₦{Number(cp.hourly_rate).toLocaleString()}</p>
+                            </div>
+                          </div>
+                        )}
+                        {cp?.availability && (
+                          <div className="flex items-start gap-2">
+                            <Clock size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-gray-400 mb-0.5">Availability</p>
+                              <p className="text-sm font-medium text-gray-800 capitalize">{cp.availability.replace(/_/g, ' ')}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Skills */}
+                    {cp?.skills?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Skills</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {cp.skills.map((skill: string) => (
+                            <span key={skill} className="text-xs border border-gray-200 rounded-full px-2.5 py-1 text-gray-600 bg-white">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Portfolio links */}
+                    {portfolioLinks.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Portfolio Links</p>
+                        <div className="space-y-2">
+                          {portfolioLinks.map((link: { label: string; url: string }, i: number) => (
+                            <div key={i} className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-3 py-2">
+                              <LinkIcon size={13} className="text-gray-400 shrink-0" />
+                              <span className="text-xs text-gray-500 shrink-0 min-w-[100px] font-medium">{link.label}</span>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-[#6b1d2b] hover:underline truncate"
+                              >
+                                <ExternalLink size={11} className="shrink-0" />
+                                {link.url}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Legacy single portfolio_url fallback */}
+                    {cp?.portfolio_url && portfolioLinks.length === 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Portfolio</p>
+                        <a
+                          href={cp.portfolio_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-[#6b1d2b] hover:underline font-medium"
+                        >
+                          <ExternalLink size={12} />
+                          View portfolio
+                        </a>
+                      </div>
+                    )}
 
                     {/* Work samples */}
                     {samples.length > 0 && (
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">Work Samples</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                          Work Samples <span className="text-gray-300 font-normal normal-case">({samples.length})</span>
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                           {samples.map((sample: any) => (
                             <a
                               key={sample.id}
                               href={sample.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group block rounded-lg overflow-hidden border border-gray-200 hover:border-gray-400 transition-colors"
+                              className="group block rounded-xl overflow-hidden border border-gray-200 hover:border-[#6b1d2b]/40 hover:shadow-sm transition-all"
                             >
                               {sample.file_type === 'image' ? (
                                 <div className="aspect-square bg-gray-100">
@@ -312,17 +481,22 @@ export default function AdminApplicationsPage() {
                               ) : (
                                 <div className="aspect-square bg-gray-50 flex flex-col items-center justify-center gap-2 p-3">
                                   {sample.file_type === 'pdf'
-                                    ? <FileText size={24} className="text-gray-400" />
+                                    ? <FileText size={28} className="text-gray-400" />
                                     : sample.file_type === 'video'
-                                    ? <Film size={24} className="text-gray-400" />
-                                    : <ImageIcon size={24} className="text-gray-400" />}
-                                  <p className="text-[10px] text-gray-500 text-center truncate w-full px-1">{sample.title}</p>
+                                    ? <Film size={28} className="text-gray-400" />
+                                    : <ImageIcon size={28} className="text-gray-400" />}
+                                  <p className="text-[10px] text-gray-500 text-center truncate w-full px-1 leading-snug">{sample.title}</p>
                                 </div>
                               )}
                             </a>
                           ))}
                         </div>
                       </div>
+                    )}
+
+                    {/* Empty state when no onboarding data yet */}
+                    {!cp && samples.length === 0 && (
+                      <p className="text-sm text-gray-400 text-center py-4">This creator hasn&apos;t completed their onboarding profile yet.</p>
                     )}
                   </div>
                 )}

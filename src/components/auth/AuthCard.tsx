@@ -16,7 +16,7 @@ export function AuthCard({ children, mascotSrc }: AuthCardProps) {
       {/* Two-column body */}
       <div className="flex flex-1 min-h-0 md:px-48">
         {/* Form side — vertically and horizontally centered */}
-        <div className="flex-1 flex items-center justify-center px-10 py-6">
+        <div className="flex-1 flex items-center justify-center px-5 md:px-10 py-6">
           {children}
         </div>
 
