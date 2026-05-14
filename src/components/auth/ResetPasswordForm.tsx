@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { AuthCard } from './AuthCard'
 
 const schema = z.object({
@@ -33,7 +33,6 @@ export function ResetPasswordForm() {
 
   async function onSubmit(data: FormData) {
     setLoading(true)
-    const supabase = createClient()
     await supabase.auth.updateUser({ password: data.password })
     setLoading(false)
     setDone(true)

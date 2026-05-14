@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useCreative } from '@/lib/hooks/useCreatives'
 import { useUser } from '@/lib/hooks/useUser'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { SendInquiryModal } from '@/components/inquiries/SendInquiryModal'
 import Link from 'next/link'
 import { WorkSample } from '@/lib/types'
@@ -21,13 +21,12 @@ export default function CreativeProfilePage() {
   const { data: workSamples = [] } = useQuery<WorkSample[]>({
     queryKey: ['work-samples', id],
     queryFn: async () => {
-      const supabase = createClient()
       const { data } = await supabase
         .from('work_samples')
         .select('*')
         .eq('creative_id', id)
         .order('created_at', { ascending: false })
-      return data || []
+      return (data || []) as unknown as WorkSample[]
     },
     enabled: !!id,
   })
@@ -44,7 +43,6 @@ export default function CreativeProfilePage() {
 
   async function toggleShortlist() {
     if (!profile) return
-    const supabase = createClient()
     if (shortlisted) {
       await supabase.from('shortlists').delete().match({ founder_id: profile.id, creative_id: id })
       setShortlisted(false)

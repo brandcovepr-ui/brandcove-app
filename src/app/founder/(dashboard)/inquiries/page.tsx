@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
@@ -24,7 +24,6 @@ export default function InquiriesPage() {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!profile?.id) return []
-      const supabase = createClient()
       const col = profile.role === 'founder' ? 'founder_id' : 'creative_id'
       const { data } = await supabase
         .from('inquiries')

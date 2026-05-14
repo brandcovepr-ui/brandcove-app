@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useUser } from '@/lib/hooks/useUser'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import Image from 'next/image'
 
 export default function SubscribePage() {
@@ -30,18 +30,9 @@ export default function SubscribePage() {
     setError('')
     setLoading(true)
 
-    const supabase = createClient()
-    // getUser() validates against the Supabase auth server and triggers a
-    // refresh if the access token is expired. getSession() is called after so
-    // it always returns the already-refreshed session — never a stale one.
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Session expired. Please log in again.')
-      setLoading(false)
-      return
-    }
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    const token = session?.access_token ?? null
+    if (!token) {
       setError('Session expired. Please log in again.')
       setLoading(false)
       return
@@ -52,7 +43,7 @@ export default function SubscribePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ plan: planCode }),
       })

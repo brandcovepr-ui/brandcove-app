@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 function CallbackHandler() {
   const router = useRouter()
@@ -17,19 +17,16 @@ function CallbackHandler() {
     }
 
     async function verify() {
-      const supabase = createClient()
-      // getUser() validates + refreshes; getSession() then returns the fresh token.
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace('/login'); return }
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.replace('/login'); return }
+      const token = session?.access_token ?? null
+      if (!token) { router.replace('/login'); return }
 
       try {
         const res = await fetch('/api/paystack/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ reference }),
         })
@@ -40,10 +37,12 @@ function CallbackHandler() {
           return
         }
 
+        if (!session) { router.replace('/login'); return }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single()
 
         router.replace(profile?.role === 'creative' ? '/creator/dashboard' : '/founder/dashboard')

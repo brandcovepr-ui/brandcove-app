@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Heart, HeartOff } from 'lucide-react'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 
 interface CreativeCardProps {
@@ -34,7 +34,6 @@ export function CreativeCard({ creative, initialShortlisted = false }: CreativeC
     e.preventDefault()
     if (!profile) return
     setSaving(true)
-    const supabase = createClient()
 
     if (shortlisted) {
       await supabase.from('shortlists').delete().match({

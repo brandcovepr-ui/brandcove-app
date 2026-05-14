@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useUser } from '@/lib/hooks/useUser'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { FileText, Film, ImageIcon } from 'lucide-react'
 import type { CreativeProfile, WorkSample } from '@/lib/types'
 
@@ -14,7 +14,7 @@ export default function CreatorProfileViewPage() {
     queryKey: ['creative-profile', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return null
-      const { data } = await createClient()
+      const { data } = await supabase
         .from('creative_profiles')
         .select('*')
         .eq('id', profile.id)
@@ -28,7 +28,7 @@ export default function CreatorProfileViewPage() {
     queryKey: ['work-samples', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return []
-      const { data } = await createClient()
+      const { data } = await supabase
         .from('work_samples')
         .select('*')
         .eq('creative_id', profile.id)

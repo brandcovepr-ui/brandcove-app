@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useRouter } from 'next/navigation'
 
@@ -33,17 +33,27 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
   })
 
   async function onSubmit(data: FormData) {
+    console.log('profile:', profile)
     if (!profile) return
     setLoading(true)
-    const supabase = createClient()
 
-    const { data: inquiry, error } = await supabase.from('inquiries').insert({
-      founder_id: profile.id,
-      creative_id: creativeId,
-      project_description: data.project_description,
-      timeline: data.timeline || null,
-      budget: data.budget ? Number(data.budget) : null,
-    }).select().single()
+     console.log('Inserting inquiry with:', {
+    founder_id: profile.id,
+    creative_id: creativeId,
+    project_description: data.project_description,
+  })
+
+  const { data: inquiry, error } = await supabase.from('inquiries').insert({
+    founder_id: profile.id,
+    creative_id: creativeId,
+    project_description: data.project_description,
+    timeline: data.timeline || null,
+    budget: data.budget ? Number(data.budget) : null,
+  }).select().single()
+
+  console.log('Result:', { inquiry, error })
+
+
 
     if (!error && inquiry) {
       // The project description becomes the first message of the conversation
@@ -57,10 +67,11 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inquiry_id: inquiry.id, sender_id: profile.id }),
+        keepalive: true,
       }).catch(() => {})
       setLoading(false)
       onClose()
-      router.push('/founder/messages')
+      router.push('/founder/messages?sent=1')
     } else {
       setLoading(false)
     }

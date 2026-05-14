@@ -3,7 +3,7 @@
 import { useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { AuthCard } from '@/components/auth/AuthCard'
 import { getAuthErrorMessage } from '@/lib/utils/authErrors'
 
@@ -53,7 +53,6 @@ function VerifyEmailForm() {
 
     setLoading(true)
     setError('')
-    const supabase = createClient()
 
     const { data, error: verifyError } = await supabase.auth.verifyOtp({
       email,
@@ -92,7 +91,6 @@ function VerifyEmailForm() {
     setLoading(true)
     setError('')
     setResent(false)
-    const supabase = createClient()
     const { error: resendError } = await supabase.auth.resend({ type: 'signup', email })
     setLoading(false)
     if (resendError) {

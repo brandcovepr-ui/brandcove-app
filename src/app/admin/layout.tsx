@@ -1,28 +1,30 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/lib/hooks/useUser'
 import { AdminLayoutShell } from './AdminLayoutShell'
 
-export const dynamic = 'force-dynamic'
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useUser()
+  const router = useRouter()
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getClaims()
+  useEffect(() => {
+    if (loading) return
+    if (!profile || profile.role !== 'admin') {
+      router.replace('/login')
+    }
+  }, [profile, loading, router])
 
-  if (error || !data?.claims) {
-    redirect('/login')
+  if (loading || !profile) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+      </div>
+    )
   }
 
-  const userId = data.claims.sub as string
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
-    .single()
-
-  if (!profile || profile.role !== 'admin') {
-    redirect('/login')
-  }
+  if (profile.role !== 'admin') return null
 
   return <AdminLayoutShell>{children}</AdminLayoutShell>
 }

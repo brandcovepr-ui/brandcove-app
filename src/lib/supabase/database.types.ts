@@ -40,7 +40,11 @@ export type Database = {
           discipline: string
           hourly_rate: number | null
           id: string
+          location: string | null
+          portfolio_links: Json | null
           portfolio_url: string | null
+          review_notes: string | null
+          reviewed_at: string | null
           skills: string[] | null
           years_experience: number | null
         }
@@ -49,7 +53,11 @@ export type Database = {
           discipline: string
           hourly_rate?: number | null
           id: string
+          location?: string | null
+          portfolio_links?: Json | null
           portfolio_url?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
           skills?: string[] | null
           years_experience?: number | null
         }
@@ -58,7 +66,11 @@ export type Database = {
           discipline?: string
           hourly_rate?: number | null
           id?: string
+          location?: string | null
+          portfolio_links?: Json | null
           portfolio_url?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
           skills?: string[] | null
           years_experience?: number | null
         }
@@ -275,6 +287,7 @@ export type Database = {
           onboarding_complete: boolean | null
           paystack_customer_code: string | null
           paystack_subscription_code: string | null
+          review_status: string | null
           role: string
           subscription_expires_at: string | null
           subscription_plan: string | null
@@ -292,6 +305,7 @@ export type Database = {
           onboarding_complete?: boolean | null
           paystack_customer_code?: string | null
           paystack_subscription_code?: string | null
+          review_status?: string | null
           role: string
           subscription_expires_at?: string | null
           subscription_plan?: string | null
@@ -309,6 +323,7 @@ export type Database = {
           onboarding_complete?: boolean | null
           paystack_customer_code?: string | null
           paystack_subscription_code?: string | null
+          review_status?: string | null
           role?: string
           subscription_expires_at?: string | null
           subscription_plan?: string | null
@@ -348,6 +363,41 @@ export type Database = {
           {
             foreignKeyName: "shortlists_founder_id_fkey"
             columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_samples: {
+        Row: {
+          created_at: string | null
+          creative_id: string
+          file_type: string | null
+          id: string
+          title: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          creative_id: string
+          file_type?: string | null
+          id?: string
+          title?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          creative_id?: string
+          file_type?: string | null
+          id?: string
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_samples_creative_id_fkey"
+            columns: ["creative_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

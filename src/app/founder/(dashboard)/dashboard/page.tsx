@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Plus, Bookmark, FileText, MessageSquare, Users } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 
 function useDashboardData(userId: string | undefined) {
@@ -13,7 +13,6 @@ function useDashboardData(userId: string | undefined) {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!userId) return null
-      const supabase = createClient()
 
       const { data: allInquiries } = await supabase
         .from('inquiries')
@@ -86,8 +85,8 @@ function useDashboardData(userId: string | undefined) {
         activities.push({
           icon: 'inquiry',
           text: `You sent an inquiry to ${name}`,
-          time: formatDistanceToNow(new Date(inq.created_at), { addSuffix: true }),
-          ts: new Date(inq.created_at),
+          time: formatDistanceToNow(new Date(inq.created_at!), { addSuffix: true }),
+          ts: new Date(inq.created_at!),
         })
       }
 
@@ -96,8 +95,8 @@ function useDashboardData(userId: string | undefined) {
         activities.push({
           icon: 'shortlist',
           text: `You shortlisted ${name}`,
-          time: formatDistanceToNow(new Date(sl.created_at), { addSuffix: true }),
-          ts: new Date(sl.created_at),
+          time: formatDistanceToNow(new Date(sl.created_at!), { addSuffix: true }),
+          ts: new Date(sl.created_at!),
         })
       }
 
@@ -106,8 +105,8 @@ function useDashboardData(userId: string | undefined) {
         activities.push({
           icon: 'message',
           text: `${name} replied to your inquiry`,
-          time: formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }),
-          ts: new Date(msg.created_at),
+          time: formatDistanceToNow(new Date(msg.created_at!), { addSuffix: true }),
+          ts: new Date(msg.created_at!),
         })
       }
 

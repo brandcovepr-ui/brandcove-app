@@ -1,34 +1,47 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/lib/hooks/useUser'
 import { CreatorLayoutShell } from './CreatorLayoutShell'
 
-export const dynamic = 'force-dynamic'
+export default function CreatorDashboardLayout({ children }: { children: React.ReactNode }) {
+  const { profile, loading } = useUser()
+  const router = useRouter()
 
-export default async function CreatorDashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.getClaims()
+  useEffect(() => {
+    if (loading) return
+    if (!profile) { router.replace('/login'); return }
+    if (profile.role !== 'creative') { router.replace('/founder/dashboard'); return }
+    if (!profile.onboarding_complete) { router.replace('/creator'); return }
+    if (profile.review_status !== 'approved') { router.replace('/creator/pending-review'); return }
+    const isExpired = profile.subscription_expires_at
+      ? new Date(profile.subscription_expires_at) < new Date()
+      : false
+    if (profile.subscription_status !== 'active' || isExpired) { router.replace('/subscribe'); return }
+  }, [profile, loading, router])
 
-  if (error || !data?.claims) {
-    redirect('/login')
+  if (loading || !profile) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+      </div>
+    )
   }
-
-  const userId = data.claims.sub as string
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, onboarding_complete, review_status, subscription_status, subscription_expires_at')
-    .eq('id', userId)
-    .single()
-
-  if (!profile) redirect('/login')
-  if (profile.role !== 'creative') redirect('/founder/dashboard')
-  if (!profile.onboarding_complete) redirect('/creator')
-  if (profile.review_status !== 'approved') redirect('/creator/pending-review')
 
   const isExpired = profile.subscription_expires_at
     ? new Date(profile.subscription_expires_at) < new Date()
     : false
-  if (profile.subscription_status !== 'active' || isExpired) redirect('/subscribe')
+
+  if (
+    profile.role !== 'creative' ||
+    !profile.onboarding_complete ||
+    profile.review_status !== 'approved' ||
+    profile.subscription_status !== 'active' ||
+    isExpired
+  ) {
+    return null
+  }
 
   return <CreatorLayoutShell>{children}</CreatorLayoutShell>
 }

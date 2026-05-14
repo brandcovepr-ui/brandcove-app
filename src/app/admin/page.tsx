@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
+
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow } from 'date-fns'
 import { CheckCircle, XCircle, Clock, ExternalLink, ChevronDown, ChevronUp, FileText, Film, ImageIcon, Link as LinkIcon, MapPin, Briefcase, Calendar, DollarSign } from 'lucide-react'
@@ -21,7 +22,6 @@ function useApplications(filter: ReviewStatus | 'all') {
     queryKey: ['admin-applications', filter],
     staleTime: 0,
     queryFn: async () => {
-      const supabase = createClient()
       let query = supabase
         .from('profiles')
         .select(`
@@ -73,14 +73,15 @@ export default function AdminApplicationsPage() {
 
   async function updateStatus(id: string, status: 'approved' | 'rejected', denial_reason?: string) {
     setUpdating(id)
-    const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token ?? null
+    if (!token) { setUpdating(null); return }
 
     await fetch('/api/admin/review', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.access_token ?? ''}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ creative_id: id, status, denial_reason }),
     })

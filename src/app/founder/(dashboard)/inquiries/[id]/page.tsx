@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -15,7 +15,6 @@ export default function InquiryDetailPage() {
   const { data: inquiry, isLoading } = useQuery({
     queryKey: ['inquiry', id],
     queryFn: async () => {
-      const supabase = createClient()
       const { data } = await supabase
         .from('inquiries')
         .select('*, founder:profiles!founder_id(id, full_name, avatar_url), creative:profiles!creative_id(id, full_name, avatar_url, bio, creative_profiles(discipline, skills))')

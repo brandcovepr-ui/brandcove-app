@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
+import { AuthProvider } from '@/components/providers/auth-provider'
 
 export const metadata: Metadata = {
   title: 'BrandCove — Connect Founders with Creatives',
@@ -23,7 +24,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <AuthProvider>
+          <Providers>{children}</Providers>
+        </AuthProvider>
       </body>
     </html>
   )

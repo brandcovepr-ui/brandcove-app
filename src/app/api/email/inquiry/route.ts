@@ -17,7 +17,14 @@ function getSupabaseAdmin() {
  * Notifies the creative that a founder sent them a new inquiry.
  */
 export async function POST(req: NextRequest) {
-  const { inquiry_id, sender_id } = await req.json()
+  let inquiry_id: string, sender_id: string
+  try {
+    const body = await req.json()
+    inquiry_id = body.inquiry_id
+    sender_id = body.sender_id
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
   if (!inquiry_id || !sender_id) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })

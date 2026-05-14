@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
+
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { format } from 'date-fns'
@@ -44,9 +45,10 @@ export default function CreatorSettingsPage() {
 
   // Fetch real email + pre-fill form once profile loads
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }: { data: { user: { email?: string } | null } }) => {
-      if (data.user?.email) setUserEmail(data.user.email)
-    })
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.email) setUserEmail(session.user.email)
+    })()
   }, [])
 
   useEffect(() => {
@@ -64,7 +66,6 @@ export default function CreatorSettingsPage() {
 
   async function onSaveProfile(data: ProfileData) {
     if (!profile) return
-    const supabase = createClient()
     const { data: updated } = await supabase
       .from('profiles')
       .update({ full_name: data.full_name })
@@ -80,24 +81,20 @@ export default function CreatorSettingsPage() {
   }
 
   async function onSavePassword(data: PasswordData) {
-    await createClient().auth.updateUser({ password: data.password })
+    await supabase.auth.updateUser({ password: data.password })
     passwordForm.reset()
     showToast('Password updated')
   }
 
   async function cancelSubscription() {
     if (!profile) return
-    const supabase = createClient()
-    // getUser() validates with the auth server and triggers a token refresh if
-    // the access token is expired, so the session we read next is always fresh.
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+    const token = session?.access_token ?? null
+    if (!token) return
 
     await fetch('/api/paystack/cancel', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
 
     // Reflect cancelled status locally without a full page reload

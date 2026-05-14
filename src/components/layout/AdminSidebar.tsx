@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, LogOut, UserPlus, X } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,6 +21,7 @@ export function AdminSidebar({ onNavClick }: { onNavClick?: () => void }) {
 
   const nav = [
     { label: 'Applications', href: '/admin', icon: <LayoutDashboard size={18} /> },
+    { label: 'Onboard User', href: '/admin/onboard', icon: <UserPlus size={18} /> },
   ]
 
   return (
@@ -40,7 +41,9 @@ export function AdminSidebar({ onNavClick }: { onNavClick?: () => void }) {
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Admin</p>
         {nav.map(item => {
-          const active = pathname === item.href || pathname.startsWith(item.href + '/')
+          const active = item.href === '/admin'
+            ? pathname === '/admin'
+            : pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link
               key={item.href}

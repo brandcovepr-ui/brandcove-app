@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface Props {
   inquiryId: string
@@ -26,7 +26,6 @@ export function SendOfferModal({ inquiryId, founderId, creativeId, onClose }: Pr
     }
     setLoading(true)
     setError('')
-    const supabase = createClient()
     const { error: insertError } = await supabase.from('offers').insert({
       inquiry_id: inquiryId,
       founder_id: founderId,

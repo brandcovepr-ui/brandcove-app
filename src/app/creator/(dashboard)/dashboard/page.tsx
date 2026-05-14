@@ -3,16 +3,16 @@
 import Link from 'next/link'
 import { useUser } from '@/lib/hooks/useUser'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { MessageSquare, Star, TrendingUp, Bell } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 function useCreativeDashboardData(userId: string | undefined) {
   return useQuery({
     queryKey: ['creative-dashboard', userId],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (!userId) return null
-      const supabase = createClient()
 
       const [
         { count: totalInquiries },

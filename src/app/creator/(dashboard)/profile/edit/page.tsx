@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useUser } from '@/lib/hooks/useUser'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -46,7 +46,7 @@ export default function CreatorProfileEditPage() {
     queryKey: ['creative-profile', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return null
-      const { data } = await createClient()
+      const { data } = await supabase
         .from('creative_profiles')
         .select('*')
         .eq('id', profile.id)
@@ -60,12 +60,12 @@ export default function CreatorProfileEditPage() {
     queryKey: ['work-samples', profile?.id],
     queryFn: async () => {
       if (!profile?.id) return []
-      const { data } = await createClient()
+      const { data } = await supabase
         .from('work_samples')
         .select('*')
         .eq('creative_id', profile.id)
         .order('created_at', { ascending: false })
-      return (data || []) as WorkSample[]
+      return (data || []) as unknown as WorkSample[]
     },
     enabled: !!profile?.id,
   })
@@ -116,7 +116,6 @@ export default function CreatorProfileEditPage() {
     if (oversized) { setUploadError(`"${oversized.name}" exceeds the ${MAX_MB} MB limit.`); return }
 
     setUploading(true)
-    const supabase = createClient()
     const failed: string[] = []
 
     for (const file of batch) {
@@ -171,19 +170,18 @@ export default function CreatorProfileEditPage() {
 
   async function deleteWorkSample(sampleId: string) {
     if (!profile?.id) return
-    await createClient().from('work_samples').delete().eq('id', sampleId)
+    await supabase.from('work_samples').delete().eq('id', sampleId)
     queryClient.invalidateQueries({ queryKey: ['work-samples', profile.id] })
   }
 
   // ── Save ──────────────────────────────────────────────────
   async function onSave(data: ProfileFormData) {
     if (!profile?.id) return
-    const supabase = createClient()
 
     await Promise.all([
       supabase.from('profiles').update({ full_name: data.full_name, bio: data.bio }).eq('id', profile.id),
       supabase.from('creative_profiles').update({
-        discipline: discipline || null,
+        discipline: discipline || undefined,
         skills,
         hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
       }).eq('id', profile.id),

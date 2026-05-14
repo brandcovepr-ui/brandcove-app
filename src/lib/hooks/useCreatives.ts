@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 const PAGE_SIZE = 9
 
@@ -21,7 +21,6 @@ export function useCreatives(filters: CreativeFilters = {}) {
     queryKey: ['creatives', filters],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const supabase = createClient()
       const hasFilters = filters.discipline || filters.availability || filters.maxRate
 
       // !inner excludes profiles with no matching creative_profiles row when filtering
@@ -56,7 +55,6 @@ export function useCreative(id: string) {
     queryKey: ['creative', id],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const supabase = createClient()
       const { data, error } = await supabase
         .from('profiles')
         .select('*, creative_profiles(*)')

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { Upload, X, ImageIcon, FileText, Film, Plus, Link as LinkIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -141,7 +141,6 @@ export function CreativeOnboardingForm() {
     }
 
     setUploading(true)
-    const supabase = createClient()
     const failed: string[] = []
 
     for (const file of filesToUpload) {
@@ -236,7 +235,6 @@ export function CreativeOnboardingForm() {
     if (!step2Data || !profile?.id) return
     setLoading(true)
     setSubmitError('')
-    const supabase = createClient()
 
     const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
 
@@ -248,7 +246,7 @@ export function CreativeOnboardingForm() {
       location: step2Data.location || null,
       hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
       availability,
-      portfolio_links: cleanLinks,
+      portfolio_links: cleanLinks as any,
     })
 
     if (profileError) {

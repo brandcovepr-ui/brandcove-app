@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { AuthCard } from './AuthCard'
 import { getAuthErrorMessage } from '@/lib/utils/authErrors'
 import type { UserRole } from '@/lib/types'
@@ -34,8 +34,6 @@ export function SignupForm() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     setError('')
-    const supabase = createClient()
-
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -60,7 +58,6 @@ export function SignupForm() {
   }
 
   async function signUpWithGoogle() {
-    const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import Image from 'next/image'
 
@@ -57,10 +57,9 @@ export function FounderOnboardingForm() {
   async function finishOnboarding() {
     if (!step1Data) return
     setLoading(true)
-    const supabase = createClient()
 
     try {
-      const userId = profile?.id ?? (await supabase.auth.getUser()).data.user?.id
+      const userId = profile?.id ?? (await supabase.auth.getSession()).data.session?.user?.id
       if (!userId) {
         setLoading(false)
         return
@@ -104,19 +103,16 @@ export function FounderOnboardingForm() {
     setLoading(true)
     setPaymentError('')
 
-    const supabase = createClient()
-    // getUser() validates + refreshes; getSession() then returns the fresh token.
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setLoading(false); return }
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setLoading(false); return }
+    const token = session?.access_token ?? null
+    if (!token) { setLoading(false); return }
 
     try {
       const res = await fetch('/api/paystack/initialize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ plan: process.env.NEXT_PUBLIC_PAYSTACK_FOUNDER_PLAN_CODE }),
       })

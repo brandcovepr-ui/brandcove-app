@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
+
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -39,9 +40,10 @@ export default function SettingsPage() {
 
   // Fetch auth email client-side
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }: { data: { user: { email?: string } | null } }) => {
-      if (data?.user?.email) setUserEmail(data.user.email)
-    })
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user?.email) setUserEmail(session.user.email)
+    })()
   }, [])
 
   // Fetch founder_profile for pre-populating company fields
@@ -50,7 +52,7 @@ export default function SettingsPage() {
     staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return null
-      const { data } = await createClient()
+      const { data } = await supabase
         .from('founder_profiles')
         .select('company_name, industry, website_url')
         .eq('id', profile.id)
@@ -75,7 +77,7 @@ export default function SettingsPage() {
     profileForm.reset({
       full_name: profile.full_name || '',
       company_name: founderProfile?.company_name || '',
-      industry: founderProfile?.industry || '',
+      industry: (Array.isArray(founderProfile?.industry) ? founderProfile.industry[0] : founderProfile?.industry) || '',
       website_url: founderProfile?.website_url || '',
     })
   }, [profile, founderProfile])
@@ -87,16 +89,15 @@ export default function SettingsPage() {
 
   async function onSaveProfile(data: ProfileData) {
     if (!profile) return
-    const supabase = createClient()
 
     const [profileUpdate, founderUpdate] = await Promise.all([
       supabase.from('profiles').update({ full_name: data.full_name }).eq('id', profile.id).select().single(),
       supabase.from('founder_profiles').upsert({
         id: profile.id,
-        company_name: data.company_name || null,
-        industry: data.industry || null,
+        company_name: data.company_name || '',
+        industry: data.industry ? [data.industry] : null,
         website_url: data.website_url || null,
-      }),
+      } as any),
     ])
 
     if (profileUpdate.data) setProfile(profileUpdate.data as any)
@@ -105,24 +106,20 @@ export default function SettingsPage() {
   }
 
   async function onSavePassword(data: PasswordData) {
-    await createClient().auth.updateUser({ password: data.password })
+    await supabase.auth.updateUser({ password: data.password })
     passwordForm.reset()
     showSaved()
   }
 
   async function cancelSubscription() {
     if (!profile) return
-    const supabase = createClient()
-    // getUser() validates with the auth server and triggers a token refresh if
-    // the access token is expired, so the session we read next is always fresh.
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+    const token = session?.access_token ?? null
+    if (!token) return
 
     await fetch('/api/paystack/cancel', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
 
     setProfile({ ...profile, subscription_status: 'inactive' } as any)

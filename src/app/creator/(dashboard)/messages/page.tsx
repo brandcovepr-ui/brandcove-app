@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow, format } from 'date-fns'
 import { ChevronRight, Globe, Send, MessageSquare, Lock } from 'lucide-react'
@@ -62,7 +62,6 @@ export default function CreatorInquiriesPage() {
     staleTime: 0,
     queryFn: async () => {
       if (!profile?.id) return []
-      const supabase = createClient()
       const { data } = await supabase
         .from('inquiries')
         .select(`
@@ -105,7 +104,6 @@ export default function CreatorInquiriesPage() {
 
   useEffect(() => {
     if (!selectedId) return
-    const supabase = createClient()
     const channel = supabase
       .channel(`creative-offer-watch-${selectedId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'offers', filter: `inquiry_id=eq.${selectedId}` }, () => {
@@ -124,7 +122,6 @@ export default function CreatorInquiriesPage() {
   async function sendReply() {
     if (!replyText.trim() || !profile || !selectedId) return
     setSending(true)
-    const supabase = createClient()
     await supabase.from('messages').insert({
       inquiry_id: selectedId,
       sender_id: profile.id,
@@ -146,7 +143,6 @@ export default function CreatorInquiriesPage() {
 
   async function confirmAction() {
     if (!confirmModal || !selectedId || !profile) return
-    const supabase = createClient()
 
     if (confirmModal.type === 'accept') {
       setAccepting(true)
@@ -182,7 +178,7 @@ export default function CreatorInquiriesPage() {
     if (confirmModal.type === 'decline_offer' && confirmModal.offerId) {
       setDecliningOffer(true)
       setConfirmModal(null)
-      await createClient().from('offers').update({ status: 'declined' }).eq('id', confirmModal.offerId)
+      await supabase.from('offers').update({ status: 'declined' }).eq('id', confirmModal.offerId)
       fetch('/api/email/offer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

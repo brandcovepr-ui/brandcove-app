@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { AuthCard } from './AuthCard'
 import { getAuthErrorMessage } from '@/lib/utils/authErrors'
 
@@ -15,6 +15,8 @@ const schema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 })
+
+
 
 type FormData = z.infer<typeof schema>
 
@@ -31,7 +33,6 @@ export function LoginForm() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     setError('')
-    const supabase = createClient()
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
@@ -82,7 +83,6 @@ export function LoginForm() {
   }
 
   async function signInWithGoogle() {
-    const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },

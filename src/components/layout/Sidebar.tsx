@@ -7,7 +7,7 @@ import { LayoutDashboard, Search, Bookmark, MessageSquare, Settings, LogOut, X }
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { signOutUser } from '@/lib/utils/signout'
 import { getReadStateMap } from '@/lib/utils/readState'
 
@@ -23,8 +23,6 @@ function useUnreadCount(userId: string | undefined) {
     queryKey: ['unread-count', userId],
     queryFn: async () => {
       if (!userId) return 0
-      const supabase = createClient()
-
       // Scope to inquiries the user is part of
       const { data: inquiries } = await supabase
         .from('inquiries')
@@ -45,7 +43,8 @@ function useUnreadCount(userId: string | undefined) {
 
       // Only count messages newer than the last time the user read each conversation
       const readMap = getReadStateMap()
-      return messages.filter((msg: { inquiry_id: string; created_at: string }) => {
+      return messages.filter((msg) => {
+        if (!msg.inquiry_id || !msg.created_at) return false
         const lastRead = readMap[msg.inquiry_id]
         return !lastRead || new Date(msg.created_at) > new Date(lastRead)
       }).length

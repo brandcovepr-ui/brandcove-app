@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useCreatives } from '@/lib/hooks/useCreatives'
 import { CreativeCard } from '@/components/creatives/CreativeCard'
@@ -100,7 +100,6 @@ export default function BrowsePage() {
     staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return new Set<string>()
-      const supabase = createClient()
       const { data } = await supabase
         .from('shortlists')
         .select('creative_id')

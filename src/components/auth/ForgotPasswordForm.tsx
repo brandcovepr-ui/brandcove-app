@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Mail } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { AuthCard } from './AuthCard'
 
 const schema = z.object({
@@ -25,7 +25,6 @@ export function ForgotPasswordForm() {
 
   async function onSubmit(data: FormData) {
     setLoading(true)
-    const supabase = createClient()
     await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })

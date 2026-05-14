@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { Heart, Trash2 } from 'lucide-react'
 import Link from 'next/link'
@@ -26,7 +26,6 @@ export default function ShortlistPage() {
     staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return []
-      const supabase = createClient()
       const { data } = await supabase
         .from('shortlists')
         .select('*, creative:profiles!creative_id(*, creative_profiles(*))')
@@ -39,7 +38,6 @@ export default function ShortlistPage() {
 
   async function removeFromShortlist(creativeId: string) {
     if (!profile) return
-    const supabase = createClient()
     await supabase.from('shortlists').delete().match({ founder_id: profile.id, creative_id: creativeId })
     queryClient.invalidateQueries({ queryKey: ['shortlist', profile.id] })
   }

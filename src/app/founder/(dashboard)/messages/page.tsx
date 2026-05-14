@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { ChatWindow } from '@/components/chat/ChatWindow'
 import { SendOfferModal } from '@/components/chat/SendOfferModal'
@@ -58,16 +59,40 @@ function StatusBadge({ status }: { status: string }) {
 export default function FounderMessagesPage() {
   const { profile } = useUser()
   const queryClient = useQueryClient()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [offerModalOpen, setOfferModalOpen] = useState(false)
   const [actioning, setActioning] = useState(false)
+  const [sentToast, setSentToast] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('sent') === '1') {
+      setSentToast(true)
+      router.replace('/founder/messages')
+      setTimeout(() => setSentToast(false), 3000)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!profile?.id) return
+    const channel = supabase
+      .channel(`founder-inquiries-${profile.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inquiries', filter: `founder_id=eq.${profile.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['founder-messages', profile.id] })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'inquiries', filter: `founder_id=eq.${profile.id}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['founder-messages', profile.id] })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile?.id])
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ['founder-messages', profile?.id],
-    staleTime: 30 * 1000,
+    staleTime: Infinity,
     queryFn: async () => {
       if (!profile?.id) return []
-      const supabase = createClient()
       const { data } = await supabase
         .from('inquiries')
         .select(`
@@ -90,7 +115,7 @@ export default function FounderMessagesPage() {
   async function setStatus(status: 'hired' | 'declined' | 'cancelled') {
     if (!selectedId || !profile) return
     setActioning(true)
-    await createClient()
+    await supabase
       .from('inquiries')
       .update({ status })
       .eq('id', selectedId)
@@ -103,10 +128,18 @@ export default function FounderMessagesPage() {
   const isDeclined = selected?.status === 'declined' || selected?.status === 'cancelled'
   const isPending  = !isHired && !isDeclined
 
+  const Toast = sentToast ? (
+    <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-white border border-green-200 text-green-700 text-sm font-medium px-4 py-2.5 rounded-full shadow-md">
+      <CheckCircle size={15} />
+      Inquiry sent!
+    </div>
+  ) : null
+
   // ── Chat / detail view ────────────────────────────────────────────────────
   if (selectedId && selected && profile) {
     return (
       <div className="flex flex-col h-full min-h-0">
+        {Toast}
 
         {/* Persistent header: breadcrumb */}
         {/* <div className="px-4 md:px-8 py-5 border-b border-black/10 shrink-0">
@@ -269,6 +302,7 @@ export default function FounderMessagesPage() {
   // ── List view ─────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
+      {Toast}
 
       {/* Persistent header */}
       <div className="px-4 md:px-8 py-5 border-b border-gray-100 shrink-0">

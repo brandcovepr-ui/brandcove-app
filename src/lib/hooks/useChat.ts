@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Message } from '@/lib/types'
 import { computeChatAccess, type ChatAccessResult } from '@/lib/chat-access'
 
@@ -19,7 +19,6 @@ export function useChat(inquiryId: string) {
   latestOfferStatusRef.current = latestOfferStatus
 
   useEffect(() => {
-    const supabase = createClient()
 
     async function loadMessages() {
       const { data } = await supabase
@@ -27,7 +26,7 @@ export function useChat(inquiryId: string) {
         .select('*, sender:profiles(id, full_name, avatar_url)')
         .eq('inquiry_id', inquiryId)
         .order('created_at', { ascending: true })
-      if (data) setMessages(data as Message[])
+      if (data) setMessages(data as unknown as Message[])
       setLoading(false)
     }
 
@@ -37,7 +36,7 @@ export function useChat(inquiryId: string) {
         .select('status')
         .eq('id', inquiryId)
         .single()
-      if (inquiry) setInquiryStatus(inquiry.status)
+      if (inquiry) setInquiryStatus(inquiry.status ?? '')
 
       const { data: offers } = await supabase
         .from('offers')
@@ -68,7 +67,7 @@ export function useChat(inquiryId: string) {
             .select('*, sender:profiles(id, full_name, avatar_url)')
             .eq('id', payload.new.id)
             .single()
-          if (data) setMessages((prev) => [...prev, data as Message])
+          if (data) setMessages((prev) => [...prev, data as unknown as Message])
         }
       )
       .subscribe()
@@ -143,7 +142,6 @@ export function useChat(inquiryId: string) {
         console.warn('Chat is locked — message send blocked at UI level')
         return
       }
-      const supabase = createClient()
       await supabase.from('messages').insert({
         inquiry_id: inquiryId,
         sender_id: senderId,
