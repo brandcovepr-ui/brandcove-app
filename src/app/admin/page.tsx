@@ -27,7 +27,7 @@ function useApplications(filter: ReviewStatus | 'all') {
         .select(`
           id, full_name, created_at, review_status, bio, avatar_url,
           creative_profiles(discipline, skills, years_experience, portfolio_url, portfolio_links, hourly_rate, location, availability, review_notes),
-          work_samples(id, url, title, file_type)
+          work_samples!creative_id(id, url, title, file_type)
         `)
         .eq('role', 'creative')
         .order('created_at', { ascending: false })
