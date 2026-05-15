@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
-  const ctaUrl = `${appUrl}/creative/messages`
+  const ctaUrl = `${appUrl}/creator/messages`
 
   const { error: emailError } = await getResend().emails.send({
     from: FROM,

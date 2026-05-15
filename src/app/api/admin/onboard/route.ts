@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
-  await getResend().emails.send({
+  const { error: emailError } = await getResend().emails.send({
     from: FROM,
     to: email as string,
     subject: adminOnboardSubject(),
@@ -123,5 +123,11 @@ export async function POST(req: NextRequest) {
     }),
   })
 
-  return NextResponse.json({ ok: true, userId, password })
+  return NextResponse.json({
+    ok: true,
+    userId,
+    password,
+    emailSent: !emailError,
+    emailError: emailError ? (emailError as any).message ?? 'Failed to send welcome email' : null,
+  })
 }

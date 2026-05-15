@@ -33,25 +33,16 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
   })
 
   async function onSubmit(data: FormData) {
-    console.log('profile:', profile)
     if (!profile) return
     setLoading(true)
 
-     console.log('Inserting inquiry with:', {
-    founder_id: profile.id,
-    creative_id: creativeId,
-    project_description: data.project_description,
-  })
-
-  const { data: inquiry, error } = await supabase.from('inquiries').insert({
-    founder_id: profile.id,
-    creative_id: creativeId,
-    project_description: data.project_description,
-    timeline: data.timeline || null,
-    budget: data.budget ? Number(data.budget) : null,
-  }).select().single()
-
-  console.log('Result:', { inquiry, error })
+    const { data: inquiry, error } = await supabase.from('inquiries').insert({
+      founder_id: profile.id,
+      creative_id: creativeId,
+      project_description: data.project_description,
+      timeline: data.timeline || null,
+      budget: data.budget ? Number(data.budget) : null,
+    }).select().single()
 
 
 

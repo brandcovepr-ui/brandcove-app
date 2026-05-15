@@ -63,6 +63,7 @@ interface SuccessData {
   password: string
   name: string
   role: 'creative' | 'founder'
+  emailSent: boolean
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -249,7 +250,7 @@ export default function AdminOnboardPage() {
     const json = await res.json()
     if (!res.ok) { setSubmitError(json.error ?? 'Something went wrong'); setSubmitting(false); return }
 
-    const { userId, password } = json
+    const { userId, password, emailSent } = json
 
     // Upload work samples to storage + record them server-side
     if (role === 'creative' && workSamples.length > 0) {
@@ -271,7 +272,7 @@ export default function AdminOnboardPage() {
       }
     }
 
-    setSuccess({ userId, email: email.trim(), password, name: fullName.trim(), role })
+    setSuccess({ userId, email: email.trim(), password, name: fullName.trim(), role, emailSent: emailSent ?? false })
     setSubmitting(false)
   }
 
@@ -305,7 +306,9 @@ export default function AdminOnboardPage() {
           <h1 className="text-xl font-semibold text-gray-900 mb-1">Account created!</h1>
           <p className="text-sm text-gray-500 mb-6">
             <span className="font-medium text-gray-700">{success.name}</span> has been onboarded as a {success.role}.
-            A welcome email with these credentials was sent to their inbox.
+            {success.emailSent
+              ? ' A welcome email with these credentials was sent to their inbox.'
+              : ' Save the credentials below — the welcome email could not be delivered.'}
           </p>
 
           <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 text-left mb-6">
@@ -332,6 +335,15 @@ export default function AdminOnboardPage() {
               </div>
             </div>
           </div>
+
+          {!success.emailSent && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-left">
+              <p className="text-xs font-semibold text-amber-700 mb-1">Welcome email failed to send</p>
+              <p className="text-xs text-amber-600 leading-relaxed">
+                The account was created successfully but the email could not be delivered. Share the credentials above with {success.name} directly.
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button

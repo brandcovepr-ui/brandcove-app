@@ -7,7 +7,9 @@ import { supabase } from '@/lib/supabase/client'
 
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow } from 'date-fns'
-import { CheckCircle, XCircle, Clock, ExternalLink, ChevronDown, ChevronUp, FileText, Film, ImageIcon, Link as LinkIcon, MapPin, Briefcase, Calendar, DollarSign } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, ExternalLink, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, Film, ImageIcon, Link as LinkIcon, MapPin, Briefcase, Calendar, DollarSign } from 'lucide-react'
+
+const PAGE_SIZE = 10
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
@@ -17,28 +19,32 @@ const STATUS_CONFIG: Record<ReviewStatus, { label: string; color: string; bg: st
   rejected: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-100' },
 }
 
-function useApplications(filter: ReviewStatus | 'all') {
+function useApplications(filter: ReviewStatus | 'all', page: number) {
   return useQuery({
-    queryKey: ['admin-applications', filter],
+    queryKey: ['admin-applications', filter, page],
     staleTime: 0,
     queryFn: async () => {
+      const from = page * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
       let query = supabase
         .from('profiles')
         .select(`
           id, full_name, created_at, review_status, bio, avatar_url,
           creative_profiles(discipline, skills, years_experience, portfolio_url, portfolio_links, hourly_rate, location, availability, review_notes),
           work_samples!creative_id(id, url, title, file_type)
-        `)
+        `, { count: 'exact' })
         .eq('role', 'creative')
         .order('created_at', { ascending: false })
+        .range(from, to)
 
       if (filter !== 'all') {
         query = query.eq('review_status', filter)
       }
 
-      const { data, error } = await query
+      const { data, error, count } = await query
       if (error) throw error
-      return data || []
+      return { rows: data || [], total: count ?? 0 }
     },
   })
 }
@@ -57,12 +63,14 @@ export default function AdminApplicationsPage() {
   const router = useRouter()
   const { profile, loading: userLoading } = useUser()
   const [filter, setFilter] = useState<ReviewStatus | 'all'>('pending')
+  const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
   const [denyDialog, setDenyDialog] = useState<DenyDialogState | null>(null)
   const [approveDialog, setApproveDialog] = useState<ApproveDialogState | null>(null)
   const queryClient = useQueryClient()
-  const { data: applications = [], isLoading, error: queryError } = useApplications(filter)
+  const { data: { rows: applications = [], total: totalCount = 0 } = {}, isLoading, error: queryError } = useApplications(filter, page)
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
   // Guard: only admins can see this page
   useEffect(() => {
@@ -86,7 +94,7 @@ export default function AdminApplicationsPage() {
       body: JSON.stringify({ creative_id: id, status, denial_reason }),
     })
 
-    queryClient.invalidateQueries({ queryKey: ['admin-applications'] })
+    queryClient.invalidateQueries({ queryKey: ['admin-applications'], exact: false })
     setUpdating(null)
     setDenyDialog(null)
     if (expanded === id) setExpanded(null)
@@ -187,7 +195,7 @@ export default function AdminApplicationsPage() {
         {filters.map(f => (
           <button
             key={f.id}
-            onClick={() => setFilter(f.id)}
+            onClick={() => { setFilter(f.id); setPage(0) }}
             className={`px-4 pb-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
               filter === f.id
                 ? 'border-[#6b1d2b] text-[#6b1d2b]'
@@ -504,6 +512,42 @@ export default function AdminApplicationsPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6 px-1">
+          <p className="text-xs text-gray-400">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 0}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                  i === page ? 'bg-[#6b1d2b] text-white' : 'text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= totalPages - 1}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       )}
     </div>
