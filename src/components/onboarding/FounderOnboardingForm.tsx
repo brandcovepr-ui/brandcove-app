@@ -105,7 +105,7 @@ export function FounderOnboardingForm() {
         industry: [step1Data.industry],
         website_url: step1Data.website_url || null,
         creative_types_wanted: selectedRoles,
-        company_stage: companyStage || null,
+        company_stage: (companyStage || null) as string | null,
       })
 
       if (upsertError) throw upsertError
