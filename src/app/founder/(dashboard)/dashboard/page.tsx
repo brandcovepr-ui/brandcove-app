@@ -242,12 +242,12 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
             <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
               <Users size={32} className="text-[#6b1d2b]" />
             </div>
-            <h2 className="font-editorial text-3xl text-gray-900 mb-3">No talent available yet.</h2>
-            <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-7">
+            <h2 className="font-editorial text-2xl text-gray-900 mb-3">No talent available yet.</h2>
+            <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-7">
               Creatives are being reviewed and approved. Check back soon — your perfect match is on the way.
             </p>
             <Link

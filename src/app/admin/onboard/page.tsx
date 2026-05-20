@@ -8,24 +8,19 @@ import Link from 'next/link'
 // ─── constants ───────────────────────────────────────────────────────────────
 
 const DISCIPLINES = [
-  'Social Media Manager', 'Web Designer', 'Graphic Designer', 'Sales Rep',
-  'Customer Service Rep', 'Creative Assistant', 'Copywriter', 'Video Editor',
-  'Photographer', 'Brand Strategist', 'Content Creator', 'UI/UX Designer',
+  'Social Media Manager', 'Graphic Designer', 'Sales Representative',
+  'Customer Service Specialist', 'Operations Manager', 'Marketing Associate',
+
 ]
 
 const SKILLS_BY_DISCIPLINE: Record<string, string[]> = {
   'Social Media Manager': ['Instagram', 'TikTok', 'Twitter/X', 'LinkedIn', 'Content Calendar', 'Analytics', 'Community Management'],
-  'Web Designer': ['Figma', 'HTML/CSS', 'React', 'Responsive Design', 'Webflow', 'WordPress', 'UX Research'],
   'Graphic Designer': ['Adobe Illustrator', 'Photoshop', 'InDesign', 'Brand Identity', 'Typography', 'Print Design'],
-  'Sales Rep': ['Lead Generation', 'Cold Outreach', 'CRM Tools', 'Negotiation', 'B2B Sales', 'Presentation'],
-  'Customer Service Rep': ['Support Ticketing', 'Live Chat', 'Email Support', 'Conflict Resolution', 'CRM', 'Empathy'],
-  'Creative Assistant': ['Project Management', 'Research', 'Scheduling', 'Content Editing', 'Communication'],
-  'Copywriter': ['SEO Writing', 'Ad Copy', 'Email Marketing', 'Brand Voice', 'Long-form Content', 'Storytelling'],
-  'Video Editor': ['Premiere Pro', 'Final Cut Pro', 'DaVinci Resolve', 'Motion Graphics', 'Color Grading', 'YouTube'],
-  'Photographer': ['Portrait', 'Product Photography', 'Lightroom', 'Studio Lighting', 'Event Photography'],
-  'Brand Strategist': ['Brand Identity', 'Market Research', 'Positioning', 'Competitor Analysis', 'Messaging'],
-  'Content Creator': ['Short-form Video', 'Blog Writing', 'Podcasting', 'Storytelling', 'Audience Growth'],
-  'UI/UX Designer': ['Figma', 'Prototyping', 'User Research', 'Wireframing', 'Accessibility', 'Design Systems'],
+  'Sales Representative': ['Lead Generation', 'Cold Outreach', 'CRM Tools', 'Negotiation', 'B2B Sales', 'Presentation'],
+  'Customer Service Specialist': ['Support Ticketing', 'Live Chat', 'Email Support', 'Conflict Resolution', 'CRM', 'Empathy'],
+  'Operations Manager': ['Project Management', 'Research', 'Scheduling', 'Content Editing', 'Communication'],
+  'Marketing Associate': ['SEO Writing', 'Ad Copy', 'Email Marketing', 'Brand Voice', 'Long-form Content', 'Storytelling'],
+
 }
 
 const INDUSTRIES = [

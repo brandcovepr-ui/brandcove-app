@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
     return (
       <AuthCard mascotSrc="/SubscribeMascot.png">
         <div className="w-full">
-          <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Check your inbox</h1>
+          <h1 className="text-xl md:text-[28px] font-editorial text-black mb-1 tracking-tight">Check your inbox</h1>
           <p className="text-sm text-gray-500 mb-7 font-poppins">
             We sent a secure link to <strong>{getValues('email')}</strong>. Open it to reset your password and continue into your founder onboarding flow.
           </p>
@@ -63,7 +63,7 @@ export function ForgotPasswordForm() {
   return (
     <AuthCard mascotSrc="/SubscribeMascot.png">
       <div className="w-full">
-        <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Forgot password?</h1>
+        <h1 className="text-xl md:text-[28px] font-editorial text-black mb-1 tracking-tight">Forgot password?</h1>
         <p className="text-sm text-gray-500 mb-7 font-poppins">
           Enter the email linked to your account and we&apos;ll send a reset link so you can continue your setup.
         </p>
@@ -76,8 +76,10 @@ export function ForgotPasswordForm() {
                 {...register('email')}
                 type="email"
                 placeholder="e.g. founder@brandcove.com"
-                className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins ${
-                  errors.email ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                className={`w-full border rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 pr-10 font-poppins ${
+                  errors.email
+                    ? 'border-red-400 bg-red-50 focus:ring-red-400'
+                    : 'border-gray-300 focus:ring-gray-900'
                 }`}
               />
               <Mail size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />

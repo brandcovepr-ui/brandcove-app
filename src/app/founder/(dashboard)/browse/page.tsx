@@ -9,8 +9,9 @@ import { CreativeCard } from '@/components/creatives/CreativeCard'
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
 
 const ROLES = [
-  'Social Media Manager', 'Web Designer', 'Graphic Designer', 'Sales Rep',
-  'Customer Service Rep', 'Creative Assistant', 'Copywriter', 'Video Editor',
+  'Social Media Manager', 'Graphic Designer', 'Sales Representative',
+  'Customer Service Specialist', 'Operations Manager', 'Marketing Associate',
+
 ]
 const BUDGETS = [
   { label: 'Under ₦50k', value: 50000 },

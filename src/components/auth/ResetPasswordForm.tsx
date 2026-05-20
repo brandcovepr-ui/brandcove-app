@@ -42,7 +42,7 @@ export function ResetPasswordForm() {
     return (
       <AuthCard mascotSrc="/SuccessMascott.png">
         <div className="w-full">
-          <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">You&apos;re all set</h1>
+          <h1 className="text-2xl md:text-[45px] font-regular font-sans text-black mb-1 tracking-tight">You&apos;re all set</h1>
           <p className="text-sm text-gray-500 mb-7 font-poppins">
             Your password has been reset. Sign back in to resume to enter your dashboard.
           </p>
@@ -60,7 +60,7 @@ export function ResetPasswordForm() {
   return (
     <AuthCard mascotSrc="/SuccessMascott.png">
       <div className="w-full">
-        <h1 className="text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Reset Password</h1>
+        <h1 className="text-2xl md:text-[45px] font-regular font-sans text-black mb-1 tracking-tight">Reset Password</h1>
         <p className="text-sm text-gray-500 mb-7 font-poppins">
           Choose a new password for your account so you can return to hiring, shortlisting, and finishing setup.
         </p>
@@ -76,7 +76,7 @@ export function ResetPasswordForm() {
                 {...register('password')}
                 type={showPw ? 'text' : 'password'}
                 placeholder="Create a strong password"
-                className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins ${
+                className={`w-full border rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins ${
                   errors.password ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 }`}
               />
@@ -94,7 +94,7 @@ export function ResetPasswordForm() {
                 {...register('confirm')}
                 type={showConfirm ? 'text' : 'password'}
                 placeholder="Re-enter your new password"
-                className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins ${
+                className={`w-full border rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins ${
                   errors.confirm ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 }`}
               />

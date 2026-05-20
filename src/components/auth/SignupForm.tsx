@@ -67,7 +67,7 @@ export function SignupForm() {
   return (
     <AuthCard mascotSrc="/SignUpMascot.jpg">
       <div className="w-full">
-        <h1 className="text-[45px] font-editorial text-black mb-1 tracking-tight leading-tight">Let&apos;s set up your account</h1>
+        <h1 className="text-xl md:text-[28px] font-editorial text-black mb-1 tracking-tight leading-tight">Let&apos;s set up your account</h1>
         <p className="text-sm text-gray-500 mb-5 font-poppins">Please confirm your basic details to get started.</p>
 
         {/* Role selector */}
@@ -95,7 +95,7 @@ export function SignupForm() {
               {...register('email')}
               type="email"
               placeholder="chidera@brandcove.com"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-poppins"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-poppins"
             />
             {errors.email && <p className="text-xs text-red-500 mt-1 font-poppins">{errors.email.message}</p>}
           </div>
@@ -106,7 +106,7 @@ export function SignupForm() {
               {...register('fullName')}
               type="text"
               placeholder="Paul Smith"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-poppins"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 font-poppins"
             />
             {errors.fullName && <p className="text-xs text-red-500 mt-1 font-poppins">{errors.fullName.message}</p>}
           </div>
@@ -117,7 +117,7 @@ export function SignupForm() {
               <input
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 pr-10 font-poppins"
               />
               <button
                 type="button"
@@ -137,7 +137,8 @@ export function SignupForm() {
             disabled={loading}
             className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 font-poppins"
           >
-            {loading ? 'Creating account…' : 'Create account'}
+            {role === 'founder' && !loading ? 'Sign up as a founder' : 'Sign up as a creative'}
+            {loading && 'Creating account…'}
           </button>
         </form>
 

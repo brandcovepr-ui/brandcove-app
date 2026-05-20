@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, HeartOff } from 'lucide-react'
+import { Bookmark, } from 'lucide-react'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
@@ -78,8 +78,8 @@ export function CreativeCard({ creative, initialShortlisted = false }: CreativeC
           className="text-gray-300 hover:text-[#6b1d2b] transition-colors mt-1"
         >
           {shortlisted
-            ? <Heart size={18} className="text-[#6b1d2b] fill-[#6b1d2b]" />
-            : <Heart size={18} />
+            ? <Bookmark size={18} className="text-[#6b1d2b] fill-[#6b1d2b]" />
+            : <Bookmark size={18} />
           }
         </button>
       </div>

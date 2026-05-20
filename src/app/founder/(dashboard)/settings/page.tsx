@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,8 +9,9 @@ import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle } from 'lucide-react'
+import { Camera, CheckCircle, UserCircle2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { AvatarCropModal } from '@/components/shared/AvatarCropModal'
 
 type Tab = 'profile' | 'subscription' | 'password'
 
@@ -37,6 +38,38 @@ export default function SettingsPage() {
   const [cancelOpen, setCancelOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+
+  // Avatar upload
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  function handleCropDone(blob: Blob) {
+    setAvatarBlob(blob)
+    setAvatarPreview(URL.createObjectURL(blob))
+    setCropSrc(null)
+  }
+
+  async function uploadAvatar(): Promise<string | null> {
+    if (!avatarBlob || !profile?.id) return null
+    const path = `${profile.id}/avatar.jpg`
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(path, avatarBlob, { upsert: true, contentType: 'image/jpeg' })
+    if (error || !data) return null
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path)
+    return `${publicUrl}?t=${Date.now()}`
+  }
 
   // Fetch auth email client-side
   useEffect(() => {
@@ -90,8 +123,13 @@ export default function SettingsPage() {
   async function onSaveProfile(data: ProfileData) {
     if (!profile) return
 
-    const [profileUpdate, founderUpdate] = await Promise.all([
-      supabase.from('profiles').update({ full_name: data.full_name }).eq('id', profile.id).select().single(),
+    const avatarUrl = await uploadAvatar()
+
+    await Promise.all([
+      supabase
+        .from('profiles')
+        .update({ full_name: data.full_name, ...(avatarUrl ? { avatar_url: avatarUrl } : {}) })
+        .eq('id', profile.id),
       supabase.from('founder_profiles').upsert({
         id: profile.id,
         company_name: data.company_name || '',
@@ -100,7 +138,16 @@ export default function SettingsPage() {
       } as any),
     ])
 
-    if (profileUpdate.data) setProfile(profileUpdate.data as any)
+    // Re-fetch so the store always reflects the DB — this also prevents
+    // onAuthStateChange re-fetches from rolling back the avatar_url.
+    const { data: fresh } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profile.id)
+      .single()
+    if (fresh) setProfile(fresh as any)
+    if (avatarUrl) setAvatarBlob(null)
+
     queryClient.invalidateQueries({ queryKey: ['founder-profile-settings', profile.id] })
     showSaved()
   }
@@ -134,6 +181,14 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 md:p-8 relative">
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onDone={handleCropDone}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
+
       {/* Page heading */}
       <h1 className="text-2xl font-editorial  font-regular text-gray-900 mb-6 md:mb-8">Account Settings</h1>
 
@@ -169,14 +224,43 @@ export default function SettingsPage() {
           {tab === 'profile' && (
             <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-5">
               {/* Avatar */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarFileChange}
+                className="hidden"
+              />
               <div className="flex items-center gap-4 mb-2">
-                <div className="w-16 h-16 rounded-full bg-[#6b1d2b] flex items-center justify-center text-white text-2xl font-bold shrink-0 overflow-hidden">
-                  {profile?.avatar_url
-                    ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    : profile?.full_name?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <button type="button" className="text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors">
-                  Change Photo
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="relative w-16 h-16 rounded-full overflow-hidden bg-[#6b1d2b] flex items-center justify-center text-white text-2xl font-bold shrink-0 group focus:outline-none"
+                >
+                  {avatarPreview || profile?.avatar_url ? (
+                    <>
+                      <img
+                        src={avatarPreview ?? profile!.avatar_url!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera size={16} className="text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <UserCircle2 size={28} className="text-white/70 group-hover:hidden" />
+                      <Camera size={20} className="text-white hidden group-hover:block" />
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors"
+                >
+                  {avatarPreview ? 'Change Photo' : 'Upload Photo'}
                 </button>
               </div>
 

@@ -1,25 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import Image from 'next/image'
+import { Camera, UserCircle2 } from 'lucide-react'
+import { AvatarCropModal } from '@/components/shared/AvatarCropModal'
 
 
 const INDUSTRIES = ['E-commerce', 'FinTech', 'HealthTech', 'EdTech', 'Media', 'Fashion', 'Real Estate', 'SaaS', 'Other']
 const STAGES = ['Pre-launch', 'Early stage', 'Growth', 'Established']
+
+
 const ROLES = [
-  'Social Media Manager',
-  'Web Designer',
-  'Graphic Designer',
-  'Sales Rep',
-  'Customer Service Rep',
-  'Creative Assistant',
-  'Copywriter',
-  'Video Editor',
+  'Social Media Manager', 'Graphic Designer', 'Sales Representative',
+  'Customer Service Specialist', 'Operations Manager', 'Marketing Associate',
+
 ]
 
 const step1Schema = z.object({
@@ -36,8 +35,30 @@ export function FounderOnboardingForm() {
   const [companyStage, setCompanyStage] = useState('')
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [paymentError, setPaymentError] = useState('')
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null)
+
+  // Avatar
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  function handleCropDone(blob: Blob) {
+    setAvatarBlob(blob)
+    setAvatarPreview(URL.createObjectURL(blob))
+    setCropSrc(null)
+  }
 
   const { register, handleSubmit, formState: { errors } } = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -48,6 +69,18 @@ export function FounderOnboardingForm() {
     setStep(2)
   }
 
+  // Upload avatar and save to profiles on finish
+  async function uploadAvatar(userId: string): Promise<string | null> {
+    if (!avatarBlob) return null
+    const path = `${userId}/avatar.jpg`
+    const { data } = await supabase.storage
+      .from('avatars')
+      .upload(path, avatarBlob, { upsert: true, contentType: 'image/jpeg' })
+    if (!data) return null
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path)
+    return publicUrl
+  }
+
   function toggleRole(role: string) {
     setSelectedRoles(prev =>
       prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
@@ -56,14 +89,15 @@ export function FounderOnboardingForm() {
 
   async function finishOnboarding() {
     if (!step1Data) return
+    if (!profile?.id) {
+      setSubmitError('Your session expired. Please refresh and try again.')
+      return
+    }
     setLoading(true)
+    setSubmitError('')
 
     try {
-      const userId = profile?.id ?? (await supabase.auth.getSession()).data.session?.user?.id
-      if (!userId) {
-        setLoading(false)
-        return
-      }
+      const userId = profile.id
 
       const { error: upsertError } = await supabase.from('founder_profiles').upsert({
         id: userId,
@@ -71,28 +105,23 @@ export function FounderOnboardingForm() {
         industry: [step1Data.industry],
         website_url: step1Data.website_url || null,
         creative_types_wanted: selectedRoles,
+        company_stage: companyStage || null,
       })
 
-      if (upsertError) {
-        console.error('founder_profiles upsert error:', upsertError)
-        setLoading(false)
-        return
-      }
+      if (upsertError) throw upsertError
+
+      const avatarUrl = await uploadAvatar(userId)
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ onboarding_complete: true })
+        .update({ onboarding_complete: true, ...(avatarUrl ? { avatar_url: avatarUrl } : {}) })
         .eq('id', userId)
 
-      if (updateError) {
-        console.error('profiles update error:', updateError)
-        setLoading(false)
-        return
-      }
+      if (updateError) throw updateError
 
-      setStep(4)
+      setStep(5)
     } catch (err) {
-      console.error('finishOnboarding unexpected error:', err)
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -132,16 +161,23 @@ export function FounderOnboardingForm() {
     }
   }
 
-  const totalSteps = 4
-  const stepLabels = ['Your Company', 'Company Stage', 'Roles You Need', 'Subscribe']
+  const totalSteps = 5
+  const stepLabels = ['Your Company', 'Profile Photo', 'Company Stage', 'Roles You Need', 'Subscribe']
 
   return (
-    <div className="auth-bg h-screen w-full">
+    <div className="auth-bg min-h-screen overflow-y-auto w-full">
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onDone={handleCropDone}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
       <div className="w-full h-full max-h-[92vh] bg-white rounded-2xl border-2 border-white overflow-hidden shadow-xl flex flex-col font-poppins">
 
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-3 border-b border-gray-50 shrink-0 bg-[#F6F4F3]">
-          <span className="text-xl font-regular text-gray-900 font-editorial tracking-tight">BrandCove</span>
+          <Image src="/BrandCovePr.png" alt="BrandCove" width={100} height={26} className="object-contain" />
           <span className="text-xs text-gray-400 uppercase tracking-widest">
             Step {step} : {stepLabels[step - 1]}
           </span>
@@ -157,7 +193,7 @@ export function FounderOnboardingForm() {
             {/* Step 1: Company info */}
             {step === 1 && (
               <>
-                <h1 className="text-4xl font-editorial font-thin text-gray mb-1">Tell us about your company</h1>
+                <h1 className="text-[28px] font-editorial font-thin text-gray mb-1">Tell us about your company</h1>
                 <p className="text-sm text-gray-500 mb-6">This helps top creatives understand who they&apos;ll be working with.</p>
                 <form onSubmit={handleSubmit(onStep1)} className="space-y-4">
                   <div>
@@ -196,10 +232,67 @@ export function FounderOnboardingForm() {
               </>
             )}
 
-            {/* Step 2: Company stage */}
+            {/* Step 2: Profile Photo */}
             {step === 2 && (
               <>
-                <h1 className="text-4xl font-editorial font-[400px] text-gray-900 mb-1">What stage is your company in</h1>
+                <h1 className="text-[28px] font-editorial font-thin text-gray mb-1">Add a profile photo</h1>
+                <p className="text-sm text-gray-500 mb-8">A photo helps creatives know who they&apos;re working with. You can skip this and add one later.</p>
+
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarFileChange}
+                  className="hidden"
+                />
+
+                <div className="flex flex-col items-center gap-5 mb-8">
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative w-32 h-32 rounded-full overflow-hidden bg-[#f0e8ea] border-2 border-dashed border-[#6b1d2b]/30 hover:border-[#6b1d2b] transition-colors group focus:outline-none"
+                  >
+                    {avatarPreview ? (
+                      <>
+                        <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera size={20} className="text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+                        <UserCircle2 size={36} className="text-[#6b1d2b]/40" />
+                        <span className="text-[10px] text-[#6b1d2b]/60 font-medium">Upload photo</span>
+                      </div>
+                    )}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="text-sm font-medium text-[#6b1d2b] hover:text-[#4e1520] transition-colors"
+                    >
+                      {avatarPreview ? 'Change photo' : 'Choose photo'}
+                    </button>
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP · max 5 MB</p>
+                  </div>
+                </div>
+
+                <ProgressDots current={2} total={totalSteps} onDotClick={setStep} />
+                <button
+                  onClick={() => setStep(3)}
+                  className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  {avatarPreview ? 'Continue' : 'Skip for now'}
+                </button>
+              </>
+            )}
+
+            {/* Step 3: Company stage */}
+            {step === 3 && (
+              <>
+                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">What stage is your company in</h1>
                 <p className="text-sm text-gray-500 mb-6">Help us tailor the experience to your current needs.</p>
                 <div className="space-y-2 mb-6">
                   {STAGES.map(stage => (
@@ -221,9 +314,9 @@ export function FounderOnboardingForm() {
                     </button>
                   ))}
                 </div>
-                <ProgressDots current={2} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={3} total={totalSteps} onDotClick={setStep} />
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => setStep(4)}
                   disabled={!companyStage}
                   className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-40"
                 >
@@ -232,10 +325,10 @@ export function FounderOnboardingForm() {
               </>
             )}
 
-            {/* Step 3: Roles */}
-            {step === 3 && (
+            {/* Step 4: Roles */}
+            {step === 4 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Which roles do you need right now?</h1>
+                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">Which roles do you need right now?</h1>
                 <p className="text-sm text-gray-500 mb-6">Select the roles to filter your curated marketplace.</p>
                 <div className="space-y-2 mb-6">
                   {ROLES.map(role => (
@@ -261,7 +354,10 @@ export function FounderOnboardingForm() {
                     </button>
                   ))}
                 </div>
-                <ProgressDots current={3} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                {submitError && (
+                  <p className="text-xs text-red-500 mb-3">{submitError}</p>
+                )}
                 <button
                   onClick={finishOnboarding}
                   disabled={loading || selectedRoles.length === 0}
@@ -272,10 +368,10 @@ export function FounderOnboardingForm() {
               </>
             )}
 
-            {/* Step 4: Payment */}
-            {step === 4 && (
+            {/* Step 5: Payment */}
+            {step === 5 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">You&apos;re almost in.</h1>
+                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">You&apos;re almost in.</h1>
                 <p className="text-sm text-gray-500 mb-8">Get full access to BrandCove&apos;s curated network of top creatives. Cancel anytime.</p>
 
                 <div className="border border-gray-200 rounded-2xl p-6 mb-6">
@@ -304,7 +400,7 @@ export function FounderOnboardingForm() {
                   </ul>
                 </div>
 
-                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={5} total={totalSteps} onDotClick={setStep} />
                 {paymentError && (
                   <p className="text-xs text-red-500 mb-3">{paymentError}</p>
                 )}
@@ -326,7 +422,8 @@ export function FounderOnboardingForm() {
               src={
                 step === 1 ? '/OnboardingMascot.png'
                 : step === 2 ? '/Welcome Mascot.svg'
-                : step === 3 ? '/Search Mascot.png'
+                : step === 3 ? '/Welcome Mascot.svg'
+                : step === 4 ? '/Search Mascot.png'
                 : '/SubscribeMascot.png'
               }
               alt=""

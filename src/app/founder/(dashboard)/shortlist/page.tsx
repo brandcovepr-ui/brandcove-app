@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-import { Heart, Trash2 } from 'lucide-react'
+import {  Trash2, Bookmark} from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { SendInquiryModal } from '@/components/inquiries/SendInquiryModal'
@@ -134,13 +134,13 @@ export default function ShortlistPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-gray-100">
           <div className="w-20 h-20 rounded-full bg-[#f5eeee] flex items-center justify-center mb-6">
-            <Heart size={32} className="text-[#6b1d2b]" />
+            <Bookmark size={32} className="text-[#6b1d2b]" />
           </div>
           <h2 className="font-editorial text-3xl text-gray-900 text-center mb-3">
             You have not saved<br />anyone yet.
           </h2>
           <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed mb-7">
-            Tap the heart icon on any talent card or profile to save them here for easy access later.
+            Tap the bookmart icon on any talent card or profile to save them here for easy access later.
           </p>
           <Link
             href="/founder/browse"

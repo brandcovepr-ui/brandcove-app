@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +9,8 @@ import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { useAppStore } from '@/lib/stores/useAppStore'
 import { format } from 'date-fns'
-import { CheckCircle } from 'lucide-react'
+import { Camera, CheckCircle, UserCircle2 } from 'lucide-react'
+import { AvatarCropModal } from '@/components/shared/AvatarCropModal'
 
 type Tab = 'profile' | 'subscription' | 'password'
 
@@ -33,6 +34,38 @@ export default function CreatorSettingsPage() {
   const [userEmail, setUserEmail] = useState('')
   const [cancelOpen, setCancelOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+
+  // Avatar upload
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  function handleCropDone(blob: Blob) {
+    setAvatarBlob(blob)
+    setAvatarPreview(URL.createObjectURL(blob))
+    setCropSrc(null)
+  }
+
+  async function uploadAvatar(): Promise<string | null> {
+    if (!avatarBlob || !profile?.id) return null
+    const path = `${profile.id}/avatar.jpg`
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(path, avatarBlob, { upsert: true, contentType: 'image/jpeg' })
+    if (error || !data) return null
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(data.path)
+    return `${publicUrl}?t=${Date.now()}`
+  }
 
   const profileForm = useForm<ProfileData>({
     resolver: zodResolver(profileSchema),
@@ -66,17 +99,30 @@ export default function CreatorSettingsPage() {
 
   async function onSaveProfile(data: ProfileData) {
     if (!profile) return
-    const { data: updated } = await supabase
+
+    const avatarUrl = await uploadAvatar()
+
+    await Promise.all([
+      supabase
+        .from('profiles')
+        .update({ full_name: data.full_name, ...(avatarUrl ? { avatar_url: avatarUrl } : {}) })
+        .eq('id', profile.id),
+      supabase
+        .from('creative_profiles')
+        .update({ location: data.location || null })
+        .eq('id', profile.id),
+    ])
+
+    // Re-fetch so the store always reflects the DB — this also prevents
+    // onAuthStateChange re-fetches from rolling back the avatar_url.
+    const { data: fresh } = await supabase
       .from('profiles')
-      .update({ full_name: data.full_name })
+      .select('*')
       .eq('id', profile.id)
-      .select()
       .single()
-    if (updated) setProfile(updated as any)
-    await supabase
-      .from('creative_profiles')
-      .update({ location: data.location || null })
-      .eq('id', profile.id)
+    if (fresh) setProfile(fresh as any)
+    if (avatarUrl) setAvatarBlob(null)
+
     showToast('Changes saved')
   }
 
@@ -110,6 +156,14 @@ export default function CreatorSettingsPage() {
 
   return (
     <div className="p-4 md:p-8">
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onDone={handleCropDone}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
+
       {/* Toast */}
       {toast && (
         <div className="fixed top-5 right-5 z-50 flex items-center gap-2 bg-white border border-green-200 text-green-700 text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
@@ -145,14 +199,43 @@ export default function CreatorSettingsPage() {
           {tab === 'profile' && (
             <form onSubmit={profileForm.handleSubmit(onSaveProfile)}>
               {/* Avatar */}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarFileChange}
+                className="hidden"
+              />
               <div className="flex items-center gap-4 mb-7">
-                <div className="w-16 h-16 rounded-full bg-[#6b1d2b] flex items-center justify-center text-white text-2xl font-bold overflow-hidden shrink-0">
-                  {profile?.avatar_url
-                    ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                    : profile?.full_name?.[0]?.toUpperCase() || 'C'}
-                </div>
-                <button type="button" className="text-xs text-[#6b1d2b] font-medium hover:underline">
-                  Change Photo
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="relative w-16 h-16 rounded-full overflow-hidden bg-[#6b1d2b] flex items-center justify-center text-white text-2xl font-bold shrink-0 group focus:outline-none"
+                >
+                  {avatarPreview || profile?.avatar_url ? (
+                    <>
+                      <img
+                        src={avatarPreview ?? profile!.avatar_url!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera size={16} className="text-white" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <UserCircle2 size={28} className="text-white/70 group-hover:hidden" />
+                      <Camera size={20} className="text-white hidden group-hover:block" />
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="text-xs text-[#6b1d2b] font-medium hover:underline"
+                >
+                  {avatarPreview ? 'Change Photo' : 'Upload Photo'}
                 </button>
               </div>
 

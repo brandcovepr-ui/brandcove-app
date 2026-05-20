@@ -65,6 +65,7 @@ export default function FounderMessagesPage() {
   const [offerModalOpen, setOfferModalOpen] = useState(false)
   const [actioning, setActioning] = useState(false)
   const [sentToast, setSentToast] = useState(false)
+  const [creativeHasReplied, setCreativeHasReplied] = useState(false)
 
   useEffect(() => {
     if (searchParams.get('sent') === '1') {
@@ -87,6 +88,17 @@ export default function FounderMessagesPage() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [profile?.id])
+
+  useEffect(() => {
+    if (!selectedId || !profile?.id) return
+    setCreativeHasReplied(false)
+    supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('inquiry_id', selectedId)
+      .neq('sender_id', profile?.id ?? '')
+      .then(({ count }) => setCreativeHasReplied((count ?? 0) > 0))
+  }, [selectedId, profile?.id])
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ['founder-messages', profile?.id],
@@ -120,6 +132,13 @@ export default function FounderMessagesPage() {
       .update({ status })
       .eq('id', selectedId)
       .eq('founder_id', profile.id)
+    if (status === 'hired') {
+      fetch('/api/email/hire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry_id: selectedId }),
+      }).catch((err) => console.error('[hire email]', err))
+    }
     queryClient.invalidateQueries({ queryKey: ['founder-messages', profile.id] })
     setActioning(false)
   }
@@ -175,7 +194,7 @@ export default function FounderMessagesPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {isPending && (
+              {isPending && creativeHasReplied && (
                 <>
                   <button
                     onClick={() => setStatus('declined')}

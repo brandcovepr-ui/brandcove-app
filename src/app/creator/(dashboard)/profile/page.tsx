@@ -18,7 +18,7 @@ export default function CreatorProfileViewPage() {
         .from('creative_profiles')
         .select('*')
         .eq('id', profile.id)
-        .single()
+        .maybeSingle()
       return data as CreativeProfile | null
     },
     enabled: !!profile?.id,
@@ -38,10 +38,8 @@ export default function CreatorProfileViewPage() {
     enabled: !!profile?.id,
   })
 
-  const isLoading = (!profile && profileLoading) || cpLoading || samplesLoading
-  const firstName = profile?.full_name?.split(' ')[0] || 'You'
-
-  if (isLoading) {
+  // Only block on profile — creative profile and work samples load progressively
+  if (!profile && profileLoading) {
     return (
       <div className="p-4 md:p-8 animate-pulse space-y-4">
         <div className="h-8 w-48 bg-gray-100 rounded" />
@@ -55,6 +53,8 @@ export default function CreatorProfileViewPage() {
       </div>
     )
   }
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'You'
 
   return (
     <div className="p-4 md:p-8">
@@ -81,14 +81,18 @@ export default function CreatorProfileViewPage() {
           <p className="text-base font-semibold text-gray-900 leading-tight">
             {profile?.full_name?.split(' ')[0]} {profile?.full_name?.split(' ')[1]?.[0]}.
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            {creativeProfile?.discipline}
-            {creativeProfile?.years_experience != null && (
-              <> · {creativeProfile.years_experience} years exp.</>
-            )}
-          </p>
+          {cpLoading ? (
+            <div className="w-24 h-3 bg-gray-100 rounded animate-pulse mt-1" />
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">
+              {creativeProfile?.discipline}
+              {creativeProfile?.years_experience != null && (
+                <> · {creativeProfile.years_experience} years exp.</>
+              )}
+            </p>
+          )}
 
-          {creativeProfile?.hourly_rate != null && (
+          {!cpLoading && creativeProfile?.hourly_rate != null && (
             <div className="w-full mt-5 pt-5 border-t border-gray-100 text-left">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Rate</p>
               <p className="text-sm font-bold text-gray-900">
@@ -98,7 +102,7 @@ export default function CreatorProfileViewPage() {
             </div>
           )}
 
-          {creativeProfile?.skills && creativeProfile.skills.length > 0 && (
+          {!cpLoading && creativeProfile?.skills && creativeProfile.skills.length > 0 && (
             <div className="w-full mt-5 pt-5 border-t border-gray-100 text-left">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Skills</p>
               <div className="flex flex-wrap gap-1.5">
@@ -131,7 +135,13 @@ export default function CreatorProfileViewPage() {
           {/* Portfolio */}
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Portfolio</h2>
-            {workSamples.length > 0 ? (
+            {samplesLoading ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="aspect-video bg-gray-100 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : workSamples.length > 0 ? (
               <div className="grid grid-cols-2 gap-3">
                 {workSamples.map((sample) => (
                   <a

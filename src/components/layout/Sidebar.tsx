@@ -102,7 +102,7 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <aside className="w-64 md:w-56 border-r border-gray-200 flex flex-col shrink-0 h-full" style={{ background: '#EFE9E2' }}>
       {/* Logo + mobile close */}
-      <div className="relative flex items-center justify-center py-4 border-b border-gray-200/60">
+      <div className="relative flex items-center justify-center py-2.5 border-b border-gray-200/60">
         <Image src="/BrandCovePr.png" alt="BrandCove" width={120} height={32} className="object-contain" />
         <button
           onClick={onNavClick}
@@ -113,7 +113,7 @@ export function Sidebar({ onNavClick }: { onNavClick?: () => void }) {
         </button>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-2.5 space-y-1 overflow-y-auto">
         {/* Main */}
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Main</p>
         {mainNav.map(item => <NavLink key={item.href} item={item} />)}

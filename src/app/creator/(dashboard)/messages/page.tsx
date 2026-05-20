@@ -59,7 +59,7 @@ export default function CreatorInquiriesPage() {
 
   const { data: inquiries = [], isLoading } = useQuery({
     queryKey: ['creative-inquiries', profile?.id],
-    staleTime: 0,
+    staleTime: 30 * 1000,
     queryFn: async () => {
       if (!profile?.id) return []
       const { data } = await supabase
@@ -122,23 +122,58 @@ export default function CreatorInquiriesPage() {
   async function sendReply() {
     if (!replyText.trim() || !profile || !selectedId) return
     setSending(true)
-    await supabase.from('messages').insert({
+    const content = replyText.trim()
+
+    // Optimistic update — show the message immediately without waiting for refetch
+    const optimisticId = `optimistic-${Date.now()}`
+    queryClient.setQueryData(['creative-inquiries', profile.id], (old: any) =>
+      old?.map((inq: any) => {
+        if (inq.id !== selectedId) return inq
+        return {
+          ...inq,
+          messages: [...(inq.messages ?? []), {
+            id: optimisticId,
+            inquiry_id: selectedId,
+            sender_id: profile.id,
+            content,
+            created_at: new Date().toISOString(),
+          }],
+        }
+      })
+    )
+    setReplyText('')
+
+    const { error } = await supabase.from('messages').insert({
       inquiry_id: selectedId,
       sender_id: profile.id,
-      content: replyText.trim(),
+      content,
     })
-    await supabase
-      .from('inquiries')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', selectedId)
+
+    if (error) {
+      // Roll back the optimistic message and restore the text
+      queryClient.setQueryData(['creative-inquiries', profile.id], (old: any) =>
+        old?.map((inq: any) => {
+          if (inq.id !== selectedId) return inq
+          return { ...inq, messages: (inq.messages ?? []).filter((m: any) => m.id !== optimisticId) }
+        })
+      )
+      setReplyText(content)
+      setSending(false)
+      return
+    }
+
+    // Fire and forget — don't block the UI on these
+    supabase.from('inquiries').update({ updated_at: new Date().toISOString() }).eq('id', selectedId)
     fetch('/api/email/message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inquiry_id: selectedId, sender_id: profile.id, preview: replyText.trim().slice(0, 200) }),
+      body: JSON.stringify({ inquiry_id: selectedId, sender_id: profile.id, preview: content.slice(0, 200) }),
+      keepalive: true,
     }).catch(() => {})
-    setReplyText('')
+
     setSending(false)
-    queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+    // Don't manually invalidate — the Realtime subscription handles it and replaces
+    // the optimistic message with the confirmed version from the server
   }
 
   async function confirmAction() {

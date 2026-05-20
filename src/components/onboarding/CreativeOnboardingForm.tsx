@@ -7,37 +7,24 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
-import { Upload, X, ImageIcon, FileText, Film, Plus, Link as LinkIcon } from 'lucide-react'
+import { Upload, X, ImageIcon, FileText, Film, Plus, Link as LinkIcon, Camera, UserCircle2 } from 'lucide-react'
 import Image from 'next/image'
+import { AvatarCropModal } from '@/components/shared/AvatarCropModal'
 
 const DISCIPLINES = [
-  'Social Media Manager',
-  'Web Designer',
-  'Graphic Designer',
-  'Sales Rep',
-  'Customer Service Rep',
-  'Creative Assistant',
-  'Copywriter',
-  'Video Editor',
-  'Photographer',
-  'Brand Strategist',
-  'Content Creator',
-  'UI/UX Designer',
+  'Social Media Manager', 'Graphic Designer', 'Sales Representative',
+  'Customer Service Specialist', 'Operations Manager', 'Marketing Associate',
+
 ]
 
 const SKILLS_BY_DISCIPLINE: Record<string, string[]> = {
   'Social Media Manager': ['Instagram', 'TikTok', 'Twitter/X', 'LinkedIn', 'Content Calendar', 'Analytics', 'Community Management'],
-  'Web Designer': ['Figma', 'HTML/CSS', 'React', 'Responsive Design', 'Webflow', 'WordPress', 'UX Research'],
   'Graphic Designer': ['Adobe Illustrator', 'Photoshop', 'InDesign', 'Brand Identity', 'Typography', 'Print Design'],
-  'Sales Rep': ['Lead Generation', 'Cold Outreach', 'CRM Tools', 'Negotiation', 'B2B Sales', 'Presentation'],
-  'Customer Service Rep': ['Support Ticketing', 'Live Chat', 'Email Support', 'Conflict Resolution', 'CRM', 'Empathy'],
-  'Creative Assistant': ['Project Management', 'Research', 'Scheduling', 'Content Editing', 'Communication'],
-  'Copywriter': ['SEO Writing', 'Ad Copy', 'Email Marketing', 'Brand Voice', 'Long-form Content', 'Storytelling'],
-  'Video Editor': ['Premiere Pro', 'Final Cut Pro', 'DaVinci Resolve', 'Motion Graphics', 'Color Grading', 'YouTube'],
-  'Photographer': ['Portrait', 'Product Photography', 'Lightroom', 'Studio Lighting', 'Event Photography'],
-  'Brand Strategist': ['Brand Identity', 'Market Research', 'Positioning', 'Competitor Analysis', 'Messaging'],
-  'Content Creator': ['Short-form Video', 'Blog Writing', 'Podcasting', 'Storytelling', 'Audience Growth'],
-  'UI/UX Designer': ['Figma', 'Prototyping', 'User Research', 'Wireframing', 'Accessibility', 'Design Systems'],
+  'Sales Representative': ['Lead Generation', 'Cold Outreach', 'CRM Tools', 'Negotiation', 'B2B Sales', 'Presentation'],
+  'Customer Service Specialist': ['Support Ticketing', 'Live Chat', 'Email Support', 'Conflict Resolution', 'CRM', 'Empathy'],
+  'Operations Manager': ['Project Management', 'Research', 'Scheduling', 'Content Editing', 'Communication'],
+  'Marketing Associate': ['SEO Writing', 'Ad Copy', 'Email Marketing', 'Brand Voice', 'Long-form Content', 'Storytelling'],
+
 }
 
 const AVAILABILITY_OPTIONS = [
@@ -88,7 +75,13 @@ export function CreativeOnboardingForm() {
   const [discipline, setDiscipline] = useState('')
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
 
-  // Step 2
+  // Avatar (step 2)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  // Step 3 (was 2)
   const [step2Data, setStep2Data] = useState<Step2Data | null>(null)
 
   // Step 3
@@ -194,7 +187,7 @@ export function CreativeOnboardingForm() {
 
   function onStep2Submit(data: Step2Data) {
     setStep2Data(data)
-    setStep(3)
+    setStep(4)
   }
 
   // Portfolio link helpers
@@ -228,72 +221,111 @@ export function CreativeOnboardingForm() {
 
     setPortfolioErrors(newErrors)
     const hasErrors = newErrors.some(e => e.label || e.url)
-    if (!hasErrors) setStep(5)
+    if (!hasErrors) setStep(6)
   }
 
   async function finishOnboarding() {
-    if (!step2Data || !profile?.id) return
+    if (!step2Data) return
+    if (!profile?.id) {
+      setSubmitError('Your session expired. Please refresh and try again.')
+      return
+    }
     setLoading(true)
     setSubmitError('')
 
-    const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
+    try {
+      // Upload avatar (optional — failure doesn't block submission)
+      let avatarUrl: string | null = null
+      if (avatarBlob) {
+        const path = `${profile.id}/avatar.jpg`
+        const { data: uploadData } = await supabase.storage
+          .from('avatars')
+          .upload(path, avatarBlob, { upsert: true, contentType: 'image/jpeg' })
+        if (uploadData) {
+          const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(uploadData.path)
+          avatarUrl = publicUrl
+        }
+      }
 
-    const { error: profileError } = await supabase.from('creative_profiles').upsert({
-      id: profile.id,
-      discipline,
-      skills: selectedSkills,
-      years_experience: parseInt(step2Data.years_experience) || 0,
-      location: step2Data.location || null,
-      hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
-      availability,
-      portfolio_links: cleanLinks as any,
-    })
+      const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
 
-    if (profileError) {
-      setSubmitError('Something went wrong saving your profile. Please try again.')
+      const { error: profileError } = await supabase.from('creative_profiles').upsert({
+        id: profile.id,
+        discipline,
+        skills: selectedSkills,
+        years_experience: parseInt(step2Data.years_experience) || 0,
+        location: step2Data.location || null,
+        hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
+        availability,
+        portfolio_links: cleanLinks as any,
+      })
+
+      if (profileError) throw new Error('Failed to save your profile details. Please try again.')
+
+      const { error: bioError } = await supabase.from('profiles').update({
+        bio: step2Data.bio,
+        onboarding_complete: true,
+        review_status: 'pending',
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      }).eq('id', profile.id)
+
+      if (bioError) throw new Error('Failed to save your bio. Please try again.')
+
+      if (uploads.length > 0) {
+        const { error: samplesError } = await supabase.from('work_samples').insert(
+          uploads.map(u => ({
+            creative_id: profile.id,
+            url: u.url,
+            title: u.name,
+            file_type: u.file_type,
+          }))
+        )
+        if (samplesError) throw new Error('Failed to save your work samples. Please try again.')
+      }
+
+      // Notify admin — fire and forget, never block navigation on this
+      fetch('/api/email/creator-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creative_id: profile.id }),
+        keepalive: true,
+      }).catch(() => {})
+
+      router.push('/creator/pending-review')
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    const { error: bioError } = await supabase.from('profiles').update({
-      bio: step2Data.bio,
-      onboarding_complete: true,
-      review_status: 'pending',
-    }).eq('id', profile.id)
-
-    if (bioError) {
-      setSubmitError('Something went wrong saving your profile. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    if (uploads.length > 0) {
-      await supabase.from('work_samples').insert(
-        uploads.map(u => ({
-          creative_id: profile.id,
-          url: u.url,
-          title: u.name,
-          file_type: u.file_type,
-        }))
-      )
-    }
-
-    // Notify admin — fire and forget
-    fetch('/api/email/creator-application', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ creative_id: profile.id }),
-    }).catch(() => {/* best effort */})
-
-    setLoading(false)
-    router.push('/creator/pending-review')
   }
 
-  const totalSteps = 5
-  const stepLabels = ['Your Role', 'Bio & Experience', 'Show Your Work', 'Portfolio Links', 'Your Rate']
+  function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  function handleCropDone(blob: Blob) {
+    setAvatarBlob(blob)
+    setAvatarPreview(URL.createObjectURL(blob))
+    setCropSrc(null)
+  }
+
+  const totalSteps = 6
+  const stepLabels = ['Your Role', 'Profile Photo', 'Bio & Experience', 'Show Your Work', 'Portfolio Links', 'Your Rate']
 
   return (
     <div className="auth-bg h-screen w-full">
+      {cropSrc && (
+        <AvatarCropModal
+          imageSrc={cropSrc}
+          onDone={handleCropDone}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
       <div className="w-full h-full max-h-[92vh] bg-white rounded-2xl border-2 border-white overflow-hidden shadow-xl flex flex-col font-poppins">
 
         {/* Header */}
@@ -370,8 +402,66 @@ export function CreativeOnboardingForm() {
               </>
             )}
 
-            {/* Step 2: Bio & Experience */}
+            {/* Step 2: Profile Photo */}
             {step === 2 && (
+              <>
+                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Add a profile photo</h1>
+                <p className="text-sm text-gray-500 mb-8">A clear photo helps founders put a face to your work. You can skip this and add one later.</p>
+
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarFileChange}
+                  className="hidden"
+                />
+
+                <div className="flex flex-col items-center gap-5 mb-8">
+                  {/* Avatar preview circle */}
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    className="relative w-32 h-32 rounded-full overflow-hidden bg-[#f0e8ea] border-2 border-dashed border-[#6b1d2b]/30 hover:border-[#6b1d2b] transition-colors group focus:outline-none"
+                  >
+                    {avatarPreview ? (
+                      <>
+                        <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera size={20} className="text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5">
+                        <UserCircle2 size={36} className="text-[#6b1d2b]/40" />
+                        <span className="text-[10px] text-[#6b1d2b]/60 font-medium">Upload photo</span>
+                      </div>
+                    )}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="text-sm font-medium text-[#6b1d2b] hover:text-[#4e1520] transition-colors"
+                    >
+                      {avatarPreview ? 'Change photo' : 'Choose photo'}
+                    </button>
+                    <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP · max 5 MB</p>
+                  </div>
+                </div>
+
+                <ProgressDots current={2} total={totalSteps} onDotClick={setStep} />
+                <button
+                  onClick={() => setStep(3)}
+                  className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
+                >
+                  {avatarPreview ? 'Continue' : 'Skip for now'}
+                </button>
+              </>
+            )}
+
+            {/* Step 3: Bio & Experience */}
+            {step === 3 && (
               <>
                 <h1 className="text-3xl font-editorial text-gray-900 mb-1">Your bio &amp; experience</h1>
                 <p className="text-sm text-gray-500 mb-6">Tell founders what you specialize in and the value you bring to a team.</p>
@@ -416,7 +506,7 @@ export function CreativeOnboardingForm() {
                     </div>
                   </div>
 
-                  <ProgressDots current={2} total={totalSteps} onDotClick={setStep} />
+                  <ProgressDots current={3} total={totalSteps} onDotClick={setStep} />
                   <button
                     type="submit"
                     className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
@@ -427,8 +517,8 @@ export function CreativeOnboardingForm() {
               </>
             )}
 
-            {/* Step 3: Show Your Work */}
-            {step === 3 && (
+            {/* Step 4: Show Your Work */}
+            {step === 4 && (
               <>
                 <h1 className="text-3xl font-editorial text-gray-900 mb-1">Show your work</h1>
                 <p className="text-sm text-gray-500 mb-6">Upload 1 to 6 items that showcase your best capabilities. This is the first
@@ -482,9 +572,9 @@ thing founders will look at.</p>
                   </div>
                 )}
 
-                <ProgressDots current={3} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
                 <button
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(5)}
                   className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
                 >
                   {uploads.length > 0 ? 'Continue' : 'Skip for now'}
@@ -492,8 +582,8 @@ thing founders will look at.</p>
               </>
             )}
 
-            {/* Step 4: Portfolio Links */}
-            {step === 4 && (
+            {/* Step 5: Portfolio Links */}
+            {step === 5 && (
               <>
                 <h1 className="text-3xl font-editorial text-gray-900 mb-1">Your portfolio links</h1>
                 <p className="text-sm text-gray-500 mb-6">
@@ -561,7 +651,7 @@ thing founders will look at.</p>
                   </button>
                 )}
 
-                <ProgressDots current={4} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={5} total={totalSteps} onDotClick={setStep} />
                 <button
                   onClick={validateAndAdvancePortfolioStep}
                   className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors"
@@ -570,7 +660,7 @@ thing founders will look at.</p>
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setPortfolioLinks([]); setPortfolioErrors([]); setStep(5) }}
+                  onClick={() => { setPortfolioLinks([]); setPortfolioErrors([]); setStep(6) }}
                   className="w-full text-center text-sm text-gray-400 hover:text-gray-600 mt-2 py-1 transition-colors"
                 >
                   Skip for now
@@ -578,8 +668,8 @@ thing founders will look at.</p>
               </>
             )}
 
-            {/* Step 5: Rate & Availability */}
-            {step === 5 && (
+            {/* Step 6: Rate & Availability */}
+            {step === 6 && (
               <>
                 <h1 className="text-3xl font-editorial text-gray-900 mb-1">Set your rate &amp; availability</h1>
                 <p className="text-sm text-gray-500 mb-6">Founders will see this on your profile when browsing.</p>
@@ -627,7 +717,7 @@ thing founders will look at.</p>
                   </div>
                 </div>
 
-                <ProgressDots current={5} total={totalSteps} onDotClick={setStep} />
+                <ProgressDots current={6} total={totalSteps} onDotClick={setStep} />
                 <button
                   onClick={finishOnboarding}
                   disabled={loading}
@@ -651,8 +741,9 @@ thing founders will look at.</p>
               src={
                 step === 1 ? '/OnboardingMascot.png'
                 : step === 2 ? '/Welcome Mascot.svg'
-                : step === 3 ? '/Search Mascot.png'
-                : step === 4 ? '/OnboardingMascot.png'
+                : step === 3 ? '/Welcome Mascot.svg'
+                : step === 4 ? '/Search Mascot.png'
+                : step === 5 ? '/OnboardingMascot.png'
                 : '/SubscribeMascot.png'
               }
               alt=""

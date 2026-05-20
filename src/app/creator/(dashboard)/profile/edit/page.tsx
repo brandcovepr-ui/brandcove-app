@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useUser } from '@/lib/hooks/useUser'
+import { useAppStore } from '@/lib/stores/useAppStore'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { useForm } from 'react-hook-form'
@@ -12,9 +13,9 @@ import { UploadCloud, X, Eye } from 'lucide-react'
 import type { CreativeProfile, WorkSample } from '@/lib/types'
 
 const DISCIPLINES = [
-  'Social Media Manager', 'Web Designer', 'Graphic Designer', 'Sales Rep',
-  'Customer Service Rep', 'Creative Assistant', 'Copywriter', 'Video Editor',
-  'Photographer', 'Brand Strategist', 'Content Creator', 'UI/UX Designer',
+  'Social Media Manager', 'Graphic Designer', 'Sales Representative',
+  'Customer Service Specialist', 'Operations Manager', 'Marketing Associate',
+
 ]
 
 const profileSchema = z.object({
@@ -28,10 +29,10 @@ type ProfileFormData = z.infer<typeof profileSchema>
 
 const MAX_FILES = 6
 const MAX_MB = 50
-const UPLOAD_TIMEOUT_MS = 30_000
 
 export default function CreatorProfileEditPage() {
   const { profile } = useUser()
+  const setProfile = useAppStore(s => s.setProfile)
   const queryClient = useQueryClient()
   const [saved, setSaved] = useState(false)
   const [discipline, setDiscipline] = useState('')
@@ -50,7 +51,7 @@ export default function CreatorProfileEditPage() {
         .from('creative_profiles')
         .select('*')
         .eq('id', profile.id)
-        .single()
+        .maybeSingle()
       return data as CreativeProfile | null
     },
     enabled: !!profile?.id,
@@ -126,23 +127,32 @@ export default function CreatorProfileEditPage() {
         : ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video'
         : 'other'
 
-      const path = `${profile.id}/${Date.now()}-${file.name}`
+      // Sanitize the filename so special chars / spaces don't break the storage path
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${profile.id}/${Date.now()}-${safeName}`
 
       try {
-        const uploadPromise = supabase.storage.from('work-samples').upload(path, file, { upsert: false })
-        const timeout = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), UPLOAD_TIMEOUT_MS)
-        )
-        const { data, error } = await Promise.race([uploadPromise, timeout])
-        if (error || !data) { failed.push(file.name); continue }
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('work-samples')
+          .upload(path, file, { upsert: true, contentType: file.type || undefined })
 
-        const { data: { publicUrl } } = supabase.storage.from('work-samples').getPublicUrl(data.path)
-        await supabase.from('work_samples').insert({
+        if (storageError || !storageData) {
+          failed.push(file.name)
+          continue
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('work-samples')
+          .getPublicUrl(storageData.path)
+
+        const { error: insertError } = await supabase.from('work_samples').insert({
           creative_id: profile.id,
           url: publicUrl,
           title: file.name,
           file_type: fileType,
         })
+
+        if (insertError) failed.push(file.name)
       } catch {
         failed.push(file.name)
       }
@@ -152,7 +162,7 @@ export default function CreatorProfileEditPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
     queryClient.invalidateQueries({ queryKey: ['work-samples', profile.id] })
     if (failed.length) {
-      setUploadError(`${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`} failed — check your connection and try again.`)
+      setUploadError(`${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`} failed to upload. Check your connection and try again.`)
     }
   }
 
@@ -179,13 +189,25 @@ export default function CreatorProfileEditPage() {
     if (!profile?.id) return
 
     await Promise.all([
-      supabase.from('profiles').update({ full_name: data.full_name, bio: data.bio }).eq('id', profile.id),
-      supabase.from('creative_profiles').update({
-        discipline: discipline || undefined,
+      supabase
+        .from('profiles')
+        .update({ full_name: data.full_name, bio: data.bio })
+        .eq('id', profile.id),
+      supabase.from('creative_profiles').upsert({
+        id: profile.id,
+        discipline: discipline || creativeProfile?.discipline || '',
         skills,
         hourly_rate: data.hourly_rate ? parseFloat(data.hourly_rate) : null,
-      }).eq('id', profile.id),
+      }),
     ])
+
+    // Re-fetch the profile so the store reflects the saved name/bio on the view page
+    const { data: fresh } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profile.id)
+      .single()
+    if (fresh) setProfile(fresh as any)
 
     queryClient.invalidateQueries({ queryKey: ['creative-profile', profile.id] })
     setSaved(true)
