@@ -122,7 +122,7 @@ export default function AdminOnboardPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [customSkillInput, setCustomSkillInput] = useState('')
   const [yearsExp, setYearsExp] = useState('')
-  const [hourlyRate, setHourlyRate] = useState('')
+  const [monthlyRate, setMonthlyRate] = useState('')
   const [location, setLocation] = useState('')
   const [availability, setAvailability] = useState('available')
 
@@ -138,6 +138,7 @@ export default function AdminOnboardPage() {
   const [workSamples, setWorkSamples] = useState<WorkSample[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [uploadFailures, setUploadFailures] = useState<string[]>([])
   const [portfolioLinks, setPortfolioLinks] = useState<PortfolioLink[]>([{ label: '', url: '' }])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -197,6 +198,7 @@ export default function AdminOnboardPage() {
       if (!discipline) e.discipline = 'Required'
     } else {
       if (!companyName.trim()) e.company_name = 'Required'
+      if (websiteUrl.trim() && !isValidUrl(websiteUrl.trim())) e.website_url = 'Enter a valid URL'
     }
 
     portfolioLinks.forEach((l, i) => {
@@ -212,73 +214,105 @@ export default function AdminOnboardPage() {
     if (!validate()) return
     setSubmitting(true)
     setSubmitError('')
+    setUploadFailures([])
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token ?? ''
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token ?? ''
 
-    const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
+      const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
 
-    const res = await fetch('/api/admin/onboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        role, email: email.trim(), full_name: fullName.trim(), bio: bio.trim() || undefined,
-        ...(role === 'creative' ? {
-          discipline,
-          skills,
-          years_experience: yearsExp ? Number(yearsExp) : undefined,
-          hourly_rate: hourlyRate ? Number(hourlyRate) : undefined,
-          location: location.trim() || undefined,
-          availability,
-          portfolio_links: cleanLinks,
-        } : {
-          company_name: companyName.trim(),
-          industry,
-          website_url: websiteUrl.trim() || undefined,
-          company_stage: companyStage || undefined,
-          company_description: companyDescription.trim() || undefined,
-          creative_types_wanted: creativeTypesWanted,
+      const res = await fetch('/api/admin/onboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          role, email: email.trim(), full_name: fullName.trim(), bio: bio.trim() || undefined,
+          ...(role === 'creative' ? {
+            discipline,
+            skills,
+            years_experience: yearsExp ? Number(yearsExp) : undefined,
+            hourly_rate: monthlyRate ? Number(monthlyRate) : undefined,
+            location: location.trim() || undefined,
+            availability,
+            portfolio_links: cleanLinks,
+          } : {
+            company_name: companyName.trim(),
+            industry,
+            website_url: websiteUrl.trim() || undefined,
+            company_stage: companyStage || undefined,
+            company_description: companyDescription.trim() || undefined,
+            creative_types_wanted: creativeTypesWanted,
+          }),
         }),
-      }),
-    })
+      })
 
-    const json = await res.json()
-    if (!res.ok) { setSubmitError(json.error ?? 'Something went wrong'); setSubmitting(false); return }
+      const json = await res.json()
+      if (!res.ok) { setSubmitError(json.error ?? 'Something went wrong'); return }
 
-    const { userId, password, emailSent } = json
+      const { userId, password, emailSent } = json
 
-    // Upload work samples to storage + record them server-side
-    if (role === 'creative' && workSamples.length > 0) {
-      const uploaded: Array<{ url: string; title: string; file_type: string }> = []
-      for (const ws of workSamples) {
-        const path = `${userId}/${Date.now()}-${ws.file.name}`
-        const { data, error } = await supabase.storage.from('work-samples').upload(path, ws.file, { upsert: false })
-        if (!error && data) {
-          const { data: { publicUrl } } = supabase.storage.from('work-samples').getPublicUrl(data.path)
-          uploaded.push({ url: publicUrl, title: ws.title, file_type: ws.file_type })
+      // Upload work samples via signed URLs (service-role signed — not blocked by storage RLS)
+      if (role === 'creative' && workSamples.length > 0) {
+        const uploaded: Array<{ url: string; title: string; file_type: string }> = []
+        const failed: string[] = []
+
+        for (const ws of workSamples) {
+          try {
+            const path = `${userId}/${Date.now()}-${ws.file.name}`
+
+            const urlRes = await fetch('/api/admin/onboard/upload-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ path }),
+            })
+            if (!urlRes.ok) { failed.push(ws.title); continue }
+            const { token: uploadToken, path: signedPath } = await urlRes.json()
+
+            const { data, error } = await supabase.storage
+              .from('work-samples')
+              .uploadToSignedUrl(signedPath, uploadToken, ws.file, { upsert: false })
+
+            if (error || !data) { failed.push(ws.title); continue }
+
+            const { data: { publicUrl } } = supabase.storage.from('work-samples').getPublicUrl(data.path)
+            uploaded.push({ url: publicUrl, title: ws.title, file_type: ws.file_type })
+          } catch {
+            failed.push(ws.title)
+          }
+        }
+
+        if (failed.length > 0) setUploadFailures(failed)
+
+        if (uploaded.length > 0) {
+          const samplesRes = await fetch('/api/admin/onboard/samples', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ creative_id: userId, samples: uploaded }),
+          })
+          if (!samplesRes.ok) {
+            const samplesJson = await samplesRes.json().catch(() => ({}))
+            setUploadFailures(prev => [...prev, `Portfolio save failed: ${samplesJson.error ?? 'unknown error'}`])
+          }
         }
       }
-      if (uploaded.length > 0) {
-        await fetch('/api/admin/onboard/samples', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ creative_id: userId, samples: uploaded }),
-        })
-      }
-    }
 
-    setSuccess({ userId, email: email.trim(), password, name: fullName.trim(), role, emailSent: emailSent ?? false })
-    setSubmitting(false)
+      setSuccess({ userId, email: email.trim(), password, name: fullName.trim(), role, emailSent: emailSent ?? false })
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function resetForm() {
+    workSamples.forEach(ws => { if (ws.preview) URL.revokeObjectURL(ws.preview) })
     setRole('creative'); setFullName(''); setEmail(''); setBio('')
     setDiscipline(''); setSkills([]); setCustomSkillInput(''); setYearsExp('')
-    setHourlyRate(''); setLocation(''); setAvailability('available')
+    setMonthlyRate(''); setLocation(''); setAvailability('available')
     setCompanyName(''); setIndustry([]); setWebsiteUrl(''); setCompanyStage('')
     setCompanyDescription(''); setCreativeTypesWanted([])
     setWorkSamples([]); setPortfolioLinks([{ label: '', url: '' }])
-    setErrors({}); setSubmitError(''); setSuccess(null); setCopied(false)
+    setErrors({}); setSubmitError(''); setUploadFailures([]); setSuccess(null); setCopied(false)
   }
 
   async function copyPassword() {
@@ -337,6 +371,16 @@ export default function AdminOnboardPage() {
               <p className="text-xs text-amber-600 leading-relaxed">
                 The account was created successfully but the email could not be delivered. Share the credentials above with {success.name} directly.
               </p>
+            </div>
+          )}
+
+          {uploadFailures.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-left">
+              <p className="text-xs font-semibold text-amber-700 mb-1">Some work samples failed to upload</p>
+              <ul className="text-xs text-amber-600 leading-relaxed list-disc list-inside">
+                {uploadFailures.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+              <p className="text-xs text-amber-600 mt-1">You can re-upload these from the creative's profile page.</p>
             </div>
           )}
 
@@ -516,8 +560,8 @@ export default function AdminOnboardPage() {
                     <span className="flex items-center px-2.5 bg-gray-50 text-gray-500 text-sm border-r border-gray-200 shrink-0">₦</span>
                     <input
                       type="number"
-                      value={hourlyRate}
-                      onChange={e => setHourlyRate(e.target.value)}
+                      value={monthlyRate}
+                      onChange={e => setMonthlyRate(e.target.value)}
                       placeholder="150000"
                       className="flex-1 px-2.5 py-2.5 text-sm focus:outline-none"
                     />
@@ -559,13 +603,13 @@ export default function AdminOnboardPage() {
                     {COMPANY_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>
-                <Field label="Website URL">
+                <Field label="Website URL" error={errors.website_url}>
                   <input
                     type="url"
                     value={websiteUrl}
                     onChange={e => setWebsiteUrl(e.target.value)}
                     placeholder="https://yourcompany.com"
-                    className={inputCls}
+                    className={`${inputCls} ${errors.website_url ? 'border-red-300' : ''}`}
                   />
                 </Field>
               </div>
@@ -674,7 +718,11 @@ export default function AdminOnboardPage() {
                       />
                       <span className="text-[10px] text-gray-400 shrink-0 uppercase">{ws.file_type}</span>
                       <button
-                        onClick={() => setWorkSamples(prev => prev.filter((_, idx) => idx !== i))}
+                        onClick={() => {
+                          const ws = workSamples[i]
+                          if (ws.preview) URL.revokeObjectURL(ws.preview)
+                          setWorkSamples(prev => prev.filter((_, idx) => idx !== i))
+                        }}
                         className="text-gray-400 hover:text-gray-700 shrink-0"
                       >
                         <X size={14} />

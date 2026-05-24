@@ -76,7 +76,11 @@ export async function POST(req: NextRequest) {
 
   const userId = authData.user.id
 
-  await admin.from('profiles').upsert({
+  async function cleanupAuthUser() {
+    await admin.auth.admin.deleteUser(userId)
+  }
+
+  const { error: profileError } = await admin.from('profiles').upsert({
     id: userId,
     role,
     full_name,
@@ -85,8 +89,13 @@ export async function POST(req: NextRequest) {
     review_status: role === 'creative' ? 'approved' : null,
   })
 
+  if (profileError) {
+    await cleanupAuthUser()
+    return NextResponse.json({ error: `Failed to create profile: ${profileError.message}` }, { status: 500 })
+  }
+
   if (role === 'creative') {
-    await admin.from('creative_profiles').upsert({
+    const { error: creativeError } = await admin.from('creative_profiles').upsert({
       id: userId,
       discipline: discipline || '',
       skills: skills || [],
@@ -97,8 +106,12 @@ export async function POST(req: NextRequest) {
       portfolio_links: portfolio_links || [],
       reviewed_at: new Date().toISOString(),
     })
+    if (creativeError) {
+      await cleanupAuthUser()
+      return NextResponse.json({ error: `Failed to create creative profile: ${creativeError.message}` }, { status: 500 })
+    }
   } else {
-    await admin.from('founder_profiles').upsert({
+    const { error: founderError } = await admin.from('founder_profiles').upsert({
       id: userId,
       company_name: company_name || '',
       industry: industry || [],
@@ -107,6 +120,10 @@ export async function POST(req: NextRequest) {
       company_description: company_description || null,
       creative_types_wanted: creative_types_wanted || [],
     })
+    if (founderError) {
+      await cleanupAuthUser()
+      return NextResponse.json({ error: `Failed to create founder profile: ${founderError.message}` }, { status: 500 })
+    }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''

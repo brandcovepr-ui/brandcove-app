@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
   // Deep-link to the right messages page based on who the recipient is
   const ctaUrl =
     recipientId === inquiry.creative_id
-      ? `${appUrl}/creative/messages`
-      : `${appUrl}/messages`
+      ? `${appUrl}/creator/messages`
+      : `${appUrl}/founder/messages`
 
   const { error: emailError } = await getResend().emails.send({
     from: FROM,
