@@ -7,11 +7,19 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-cream: var(--cream);
+  --color-maroon: var(--maroon);
+  --color-rose: var(--rose);
   --font-sans: var(--font-sans);
+  --font-serif: var(--font-editorial), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --font-poppins: var(--font-poppins);
-  --font-editorial: var(--font-editorial);
+  --font-editorial: var(--font-editorial), Georgia, "Times New Roman", serif;
+  --font-script: var(--font-dancing), "Brush Script MT", cursive;
+  --font-weight-regular: 400;
+  --animate-scroll-up: scroll-up 24s linear infinite;
+  --animate-scroll-up-slow: scroll-up 34s linear infinite;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -61,12 +69,16 @@
 }
 
 :root {
-  /* Font family variables (populated at runtime via Google Fonts link tag) */
-  --font-geist-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
-  --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
-  --font-poppins: 'Poppins', ui-sans-serif, sans-serif;
-  --font-editorial: 'DM Serif Display', ui-serif, Georgia, serif;
-  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  /* Font family variables are overridden by next/font local classes where available. */
+  --font-geist-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+  --font-poppins: "Poppins", ui-sans-serif, sans-serif;
+  --font-editorial: "DM Serif Display", ui-serif, Georgia, serif;
+  --font-dancing: "Brush Script MT", cursive;
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --cream: #f5efe6;
+  --maroon: #5b2333;
+  --rose: #dc516b;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -136,6 +148,22 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes scroll-up {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+/* Pause scroll animation on hover */
+.scroll-column:hover .animate-scroll-up,
+.scroll-column:hover .animate-scroll-up-slow {
+  animation-play-state: paused;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -144,6 +172,7 @@
     @apply bg-background text-foreground;
   }
   html {
+    scroll-behavior: smooth;
     @apply font-sans;
   }
 }
