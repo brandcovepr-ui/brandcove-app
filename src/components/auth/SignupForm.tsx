@@ -137,8 +137,11 @@ export function SignupForm() {
             disabled={loading}
             className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 font-poppins"
           >
-            {role === 'founder' && !loading ? 'Sign up as a founder' : 'Sign up as a creative'}
-            {loading && 'Creating account…'}
+            {loading
+              ? 'Creating account…'
+              : role === 'founder'
+              ? 'Sign up as a founder'
+              : 'Sign up as a creative'}
           </button>
         </form>
 

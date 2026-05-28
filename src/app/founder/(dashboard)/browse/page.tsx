@@ -157,12 +157,12 @@ export default function BrowsePage() {
           selected={maxRate}
           onSelect={v => setRateFilter(v as number | undefined)}
         />
-        <FilterDropdown
+        {/* <FilterDropdown
           label="Availability: Any"
           options={AVAILABILITY_OPTIONS}
           selected={availability}
           onSelect={v => setAvailFilter(v as string | undefined)}
-        />
+        /> */}
 
         {hasActiveFilters && (
           <button

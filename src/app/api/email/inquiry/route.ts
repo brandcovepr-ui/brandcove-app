@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
   const { error: emailError } = await getResend().emails.send({
     from: FROM,
     to: recipientEmail,
-    subject: newInquirySubject(founderProfile?.full_name ?? 'A founder'),
+    subject: newInquirySubject('A founder'),
     html: newInquiryHtml({
       creativeName: creativeProfile?.full_name?.split(' ')[0] ?? 'there',
-      founderName: founderProfile?.full_name ?? 'A founder',
+      founderName: 'A founder',
       projectDescription: inquiry.project_description,
       timeline: inquiry.timeline,
       budget: inquiry.budget,

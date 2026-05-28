@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Upload, X, Plus, Link as LinkIcon, CheckCircle, Copy, FileText, Film, ImageIcon, ArrowLeft } from 'lucide-react'
+import { Upload, X, Plus, CheckCircle, Copy, FileText, Film, ImageIcon, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 // ─── constants ───────────────────────────────────────────────────────────────
@@ -196,14 +196,13 @@ export default function AdminOnboardPage() {
 
     if (role === 'creative') {
       if (!discipline) e.discipline = 'Required'
+      portfolioLinks.forEach((l, i) => {
+        if (l.url.trim() && !isValidUrl(l.url.trim())) e[`link_url_${i}`] = 'Enter a valid URL'
+      })
     } else {
       if (!companyName.trim()) e.company_name = 'Required'
       if (websiteUrl.trim() && !isValidUrl(websiteUrl.trim())) e.website_url = 'Enter a valid URL'
     }
-
-    portfolioLinks.forEach((l, i) => {
-      if (l.url.trim() && !isValidUrl(l.url.trim())) e[`link_url_${i}`] = 'Enter a valid URL'
-    })
 
     setErrors(e)
     return Object.keys(e).length === 0
@@ -211,10 +210,13 @@ export default function AdminOnboardPage() {
 
   // ── submit ──
   async function handleSubmit() {
-    if (!validate()) return
-    setSubmitting(true)
     setSubmitError('')
     setUploadFailures([])
+    if (!validate()) {
+      setSubmitError('Please fix the validation errors below.')
+      return
+    }
+    setSubmitting(true)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -380,7 +382,7 @@ export default function AdminOnboardPage() {
               <ul className="text-xs text-amber-600 leading-relaxed list-disc list-inside">
                 {uploadFailures.map((f, i) => <li key={i}>{f}</li>)}
               </ul>
-              <p className="text-xs text-amber-600 mt-1">You can re-upload these from the creative's profile page.</p>
+              <p className="text-xs text-amber-600 mt-1">You can re-upload these from the creative&apos;s profile page.</p>
             </div>
           )}
 
@@ -432,7 +434,7 @@ export default function AdminOnboardPage() {
                 {(['creative', 'founder'] as const).map(r => (
                   <button
                     key={r}
-                    onClick={() => setRole(r)}
+                    onClick={() => { setRole(r); setErrors({}); setSubmitError(''); }}
                     className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition-colors capitalize ${
                       role === r
                         ? 'bg-[#6b1d2b] text-white border-[#6b1d2b]'

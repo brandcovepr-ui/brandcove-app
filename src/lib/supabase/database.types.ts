@@ -88,6 +88,7 @@ export type Database = {
         Row: {
           company_description: string | null
           company_name: string
+          company_stage: string | null
           creative_types_wanted: string[] | null
           id: string
           industry: string[] | null
@@ -96,6 +97,7 @@ export type Database = {
         Insert: {
           company_description?: string | null
           company_name: string
+          company_stage?: string | null
           creative_types_wanted?: string[] | null
           id: string
           industry?: string[] | null
@@ -104,6 +106,7 @@ export type Database = {
         Update: {
           company_description?: string | null
           company_name?: string
+          company_stage?: string | null
           creative_types_wanted?: string[] | null
           id?: string
           industry?: string[] | null

@@ -9,7 +9,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import { supabase } from '@/lib/supabase/client'
 import { SendInquiryModal } from '@/components/inquiries/SendInquiryModal'
 import Link from 'next/link'
-import { WorkSample } from '@/lib/types'
+import { WorkSample, CreativeWithProfile } from '@/lib/types'
 
 export default function CreativeProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -31,10 +31,11 @@ export default function CreativeProfilePage() {
     enabled: !!id,
   })
 
-  const cp = (creative as any)?.creative_profiles
-  const firstName = (creative as any)?.full_name?.split(' ')[0] || 'Creative'
+  const creativeData = creative as unknown as CreativeWithProfile
+  const cp = creativeData?.creative_profiles
+  const firstName = creativeData?.full_name?.split(' ')[0] || 'Creative'
 
-  const fullName: string = (creative as any)?.full_name || ''
+  const fullName: string = creativeData?.full_name || ''
   const nameParts = fullName.trim().split(' ')
   const displayName =
     nameParts.length > 1
@@ -74,7 +75,7 @@ export default function CreativeProfilePage() {
   return (
     <div className="p-4 md:p-8 max-w-5xl">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm mb-5 md:mb-7">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm mb-5 md:mb-7">
         <Link href="/founder/browse" className="text-gray-400 hover:text-gray-700 transition-colors">
           Browse talents
         </Link>
@@ -84,60 +85,68 @@ export default function CreativeProfilePage() {
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
         {/* Left card */}
-        <div className="w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 p-6 text-center">
-          <div className="w-24 h-24 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4 overflow-hidden">
-            {(creative as any).avatar_url ? (
-              <img src={(creative as any).avatar_url} alt="" className="w-full h-full object-cover" />
-            ) : (
-              (creative as any).full_name?.[0]?.toUpperCase() || 'C'
+        <div className="w-full md:w-64 shrink-0 bg-white rounded-2xl border border-gray-100 p-6">
+          {/* Header area with avatar & basic details */}
+          <div className="flex flex-row md:flex-col items-center md:items-stretch gap-4 md:gap-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-[#d4a0a8] flex items-center justify-center text-white text-2xl md:text-3xl font-bold shrink-0 md:mx-auto md:mb-4 overflow-hidden">
+              {creativeData.avatar_url ? (
+                <img src={creativeData.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                creativeData.full_name?.[0]?.toUpperCase() || 'C'
+              )}
+            </div>
+
+            <div className="text-left md:text-center min-w-0">
+              <p className="font-bold text-gray-900 text-lg md:text-xl leading-tight truncate">{creativeData.full_name}</p>
+              <p className="text-xs md:text-sm text-gray-400 mt-1">
+                {[
+                  cp?.discipline,
+                  cp?.years_experience ? `${cp.years_experience}+ years exp.` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            </div>
+          </div>
+
+          {/* Additional details (Rate, Skills) */}
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-4 md:gap-0 border-t border-gray-100 md:border-none pt-4 md:pt-0 mt-4 md:mt-0">
+            {cp?.hourly_rate && (
+              <div className="md:mt-6 text-left">
+                <p className="text-xs text-gray-400 mb-0.5">Rate</p>
+                <p className="text-sm md:text-base font-bold text-gray-900">
+                  ₦{cp.hourly_rate.toLocaleString()} / month
+                </p>
+              </div>
+            )}
+
+            {cp?.skills?.length > 0 && (
+              <div className="col-span-2 md:col-span-1 md:mt-5 text-left">
+                <p className="text-xs text-gray-400 mb-2">Skills</p>
+                <div className="flex flex-wrap gap-1.5 md:gap-2">
+                  {cp.skills.map((skill: string) => (
+                    <span
+                      key={skill}
+                      className="border border-gray-200 text-gray-700 text-[10px] md:text-xs px-2.5 py-0.5 md:px-3 md:py-1 rounded-full whitespace-nowrap"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
-          <p className="font-bold text-gray-900 text-xl leading-tight">{(creative as any).full_name}</p>
-          <p className="text-sm text-gray-400 mt-1">
-            {[
-              cp?.discipline,
-              cp?.years_experience ? `${cp.years_experience}+ years exp.` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-
-          {cp?.hourly_rate && (
-            <div className="mt-6 text-left">
-              <p className="text-xs text-gray-400 mb-1">Rate</p>
-              <p className="text-base font-bold text-gray-900">
-                ₦{cp.hourly_rate.toLocaleString()} / month
-              </p>
-            </div>
-          )}
-
-          {cp?.skills?.length > 0 && (
-            <div className="mt-5 text-left">
-              <p className="text-xs text-gray-400 mb-2">Skills</p>
-              <div className="flex flex-wrap gap-2">
-                {cp.skills.map((skill: string) => (
-                  <span
-                    key={skill}
-                    className="border border-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-7 space-y-2.5">
+          <div className="mt-5 md:mt-7 space-y-2">
             <button
               onClick={() => setInquiryOpen(true)}
-              className="w-full bg-[#6b1d2b] text-white rounded-full py-3 text-sm font-semibold hover:bg-[#4e1520] transition-colors"
+              className="w-full bg-[#6b1d2b] text-white rounded-full py-2.5 md:py-3 text-sm font-semibold hover:bg-[#4e1520] transition-colors"
             >
               Hire {firstName}
             </button>
             <button
               onClick={toggleShortlist}
-              className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-full py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-full py-2.5 md:py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
               {shortlisted ? (
                 <BookmarkCheck size={14} className="text-[#6b1d2b]" />
@@ -150,7 +159,7 @@ export default function CreativeProfilePage() {
         </div>
 
         {/* Right column */}
-        <div className="flex-1 min-w-0 space-y-5">
+        <div className="flex-1 w-full min-w-0 space-y-5">
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-3">About {firstName}</h2>
             <p className="text-sm text-gray-600 leading-relaxed">
@@ -160,7 +169,7 @@ export default function CreativeProfilePage() {
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">Portfolio</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
               {workSamples.length > 0
                 ? workSamples.map((sample) => (
                     <a
@@ -183,9 +192,7 @@ export default function CreativeProfilePage() {
                       )}
                     </a>
                   ))
-                : Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="aspect-square bg-gray-100 rounded-xl" />
-                  ))}
+                : <div className="text-center flex items-center justify-center w-full h-full text-gray-400 py-8">No work samples yet.</div>}
             </div>
           </div>
         </div>

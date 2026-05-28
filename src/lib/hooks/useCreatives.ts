@@ -31,7 +31,7 @@ export function useCreatives(filters: CreativeFilters = {}) {
         .select(`*, ${joinType}`, { count: 'exact' })
         .eq('role', 'creative')
         .eq('review_status', 'approved')
-        .eq('subscription_status', 'active')
+        // .eq('subscription_status', 'active')
 
       if (filters.discipline) {
         query = query.eq('creative_profiles.discipline', filters.discipline)
