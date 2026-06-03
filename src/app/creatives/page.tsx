@@ -176,7 +176,7 @@ export default function CreativesPage() {
               chasing invoices — just founders who need exactly what you do.
             </motion.p>
             <MotionLink
-              href="/login"
+              href="/signup"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -256,7 +256,7 @@ export default function CreativesPage() {
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
           >
             <MotionLink
-              href="/login"
+              href="/signup"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="inline-flex bg-maroon text-white font-sans font-medium px-7 py-3.5 rounded-full border-2 border-maroon hover:bg-transparent hover:text-maroon transition-colors text-sm"
@@ -364,7 +364,7 @@ export default function CreativesPage() {
               Explore a wide range of opportunities now available
             </p>
             <MotionLink
-              href="/login"
+              href="/signup"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               className="inline-flex bg-maroon text-white font-sans font-medium px-8 py-3.5 rounded-full hover:bg-maroon/90 transition-colors text-sm"

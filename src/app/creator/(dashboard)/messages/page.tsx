@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
 import { formatDistanceToNow, format } from 'date-fns'
-import { ChevronRight, Globe, Send, MessageSquare, Lock } from 'lucide-react'
+import { AlertCircle, ChevronRight, Globe, Send, MessageSquare, Lock } from 'lucide-react'
 import { markInquiryAsRead } from '@/lib/utils/readState'
 import { computeChatAccess } from '@/lib/chat-access'
 
@@ -51,6 +51,7 @@ export default function CreatorInquiriesPage() {
   const [declining, setDeclining] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [decliningOffer, setDecliningOffer] = useState(false)
+  const [actionError, setActionError] = useState('')
   const [confirmModal, setConfirmModal] = useState<{
     type: 'accept' | 'decline' | 'accept_offer' | 'decline_offer'
     offerId?: string
@@ -176,51 +177,140 @@ export default function CreatorInquiriesPage() {
     // the optimistic message with the confirmed version from the server
   }
 
+  function getActionErrorMessage(type: NonNullable<typeof confirmModal>['type']) {
+    if (type === 'accept_offer') return 'Could not accept this offer. It may have already changed. Refresh and try again.'
+    if (type === 'decline_offer') return 'Could not decline this offer. It may have already changed. Refresh and try again.'
+    if (type === 'accept') return 'Could not accept this inquiry. Please try again.'
+    return 'Could not decline this inquiry. Please try again.'
+  }
+
+  async function notifyOfferAction(action: 'accepted' | 'declined') {
+    if (!selectedId) return
+    try {
+      const res = await fetch('/api/email/offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiry_id: selectedId, action }),
+      })
+      if (!res.ok) {
+        console.warn(`[offer email] ${action} notification failed`)
+      }
+    } catch (err) {
+      console.warn(`[offer email] ${action} notification failed`, err)
+    }
+  }
+
+  function openConfirmModal(modal: NonNullable<typeof confirmModal>) {
+    setActionError('')
+    setConfirmModal(modal)
+  }
+
   async function confirmAction() {
     if (!confirmModal || !selectedId || !profile) return
+    const action = confirmModal
+    setActionError('')
 
-    if (confirmModal.type === 'accept') {
-      setAccepting(true)
-      setConfirmModal(null)
-      await supabase.from('inquiries').update({ status: 'hired' }).eq('id', selectedId)
-      setAccepting(false)
+    try {
+      // ── CASE 1: Standard Inquiry Accept (No Offer Yet) ─────────────────────
+      if (action.type === 'accept') {
+        setAccepting(true)
+        const { error } = await supabase
+          .from('inquiries')
+          .update({ status: 'hired', updated_at: new Date().toISOString() })
+          .eq('id', selectedId)
+          .eq('creative_id', profile.id)
+          .select('id')
+          .single()
+
+        if (error) throw error
+        setConfirmModal(null)
+        await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+        return
+      }
+
+      // ── CASE 2: Standard Inquiry Decline ───────────────────────────────────
+      if (action.type === 'decline') {
+        setDeclining(true)
+        const { error } = await supabase
+          .from('inquiries')
+          .update({ status: 'declined', updated_at: new Date().toISOString() })
+          .eq('id', selectedId)
+          .eq('creative_id', profile.id)
+          .select('id')
+          .single()
+
+        if (error) throw error
+        setConfirmModal(null)
+        await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+        setSelectedId(null)
+        return
+      }
+
+      // ── CASE 3: Accept Official Offer ──────────────────────────────────────
+      if (action.type === 'accept_offer' && action.offerId) {
+        setAccepting(true)
+        
+        const { error: offerError } = await supabase
+          .from('offers')
+          .update({ status: 'accepted', updated_at: new Date().toISOString() })
+          .eq('id', action.offerId)
+          .eq('inquiry_id', selectedId)
+          .eq('status', 'pending')
+          .select('id')
+          .single()
+
+        if (offerError) throw offerError
+
+        const { error: inquiryError } = await supabase
+          .from('inquiries')
+          .update({ status: 'accepted', updated_at: new Date().toISOString() })
+          .eq('id', selectedId)
+          .eq('creative_id', profile.id)
+          .select('id')
+          .single()
+
+        if (inquiryError) {
+          // Rollback offer status if updating parent inquiry fails
+          await supabase
+            .from('offers')
+            .update({ status: 'pending', updated_at: new Date().toISOString() })
+            .eq('id', action.offerId)
+            .eq('inquiry_id', selectedId)
+          throw inquiryError
+        }
+
+        setConfirmModal(null)
+        await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+        notifyOfferAction('accepted')
+        return
+      }
+
+      // ── CASE 4: Decline Official Offer ──────────────────────────────────────
+      if (action.type === 'decline_offer' && action.offerId) {
+        setDecliningOffer(true)
+        const { error } = await supabase
+          .from('offers') 
+          .update({ status: 'declined', updated_at: new Date().toISOString() })
+          .eq('id', action.offerId)
+          .eq('inquiry_id', selectedId)
+          .eq('status', 'pending')
+          .select('id')
+          .single()
+
+        if (error) throw error
+        setConfirmModal(null)
+        await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
+        notifyOfferAction('declined')
+        return
+      }
+    } catch (err) {
+      console.error('[creator messages action]', err)
+      setActionError(getActionErrorMessage(action.type))
       await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-    }
-
-    if (confirmModal.type === 'decline') {
-      setDeclining(true)
-      setConfirmModal(null)
-      await supabase.from('inquiries').update({ status: 'declined' }).eq('id', selectedId)
+    } finally {
+      setAccepting(false)
       setDeclining(false)
-      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-      setSelectedId(null)
-    }
-
-    if (confirmModal.type === 'accept_offer' && confirmModal.offerId) {
-      setAccepting(true)
-      setConfirmModal(null)
-      await supabase.from('offers').update({ status: 'accepted' }).eq('id', confirmModal.offerId)
-      await supabase.from('inquiries').update({ status: 'accepted' }).eq('id', selectedId)
-      fetch('/api/email/offer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inquiry_id: selectedId, action: 'accepted' }),
-      }).catch(() => {})
-      setAccepting(false)
-      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
-    }
-
-    if (confirmModal.type === 'decline_offer' && confirmModal.offerId) {
-      setDecliningOffer(true)
-      setConfirmModal(null)
-      await supabase.from('offers').update({ status: 'declined' }).eq('id', confirmModal.offerId)
-      fetch('/api/email/offer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inquiry_id: selectedId, action: 'declined' }),
-      }).catch(() => {})
       setDecliningOffer(false)
-      await queryClient.invalidateQueries({ queryKey: ['creative-inquiries', profile.id] })
     }
   }
 
@@ -289,15 +379,15 @@ export default function CreatorInquiriesPage() {
               {hasPendingOffer && !isDeclined && !isAccepted && (
                 <>
                   <button
-                    onClick={() => setConfirmModal({ type: 'accept_offer', offerId: offer.id })}
-                    disabled={accepting}
+                    onClick={() => openConfirmModal({ type: 'accept_offer', offerId: offer.id })}
+                    disabled={accepting || decliningOffer}
                     className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {accepting ? 'Accepting…' : 'Accept Offer'}
                   </button>
                   <button
-                    onClick={() => setConfirmModal({ type: 'decline_offer', offerId: offer.id })}
-                    disabled={decliningOffer}
+                    onClick={() => openConfirmModal({ type: 'decline_offer', offerId: offer.id })}
+                    disabled={accepting || decliningOffer}
                     className="text-xs font-medium text-gray-600 border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {decliningOffer ? 'Declining…' : 'Decline Offer'}
@@ -307,15 +397,15 @@ export default function CreatorInquiriesPage() {
               {!hasPendingOffer && !isDeclined && !isAccepted && !isCancelled && (
                 <>
                   <button
-                    onClick={() => setConfirmModal({ type: 'accept' })}
-                    disabled={accepting}
+                    onClick={() => openConfirmModal({ type: 'accept' })}
+                    disabled={accepting || declining}
                     className="bg-[#6b1d2b] text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-[#4e1520] transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {accepting ? 'Accepting…' : 'Accept'}
                   </button>
                   <button
-                    onClick={() => setConfirmModal({ type: 'decline' })}
-                    disabled={declining}
+                    onClick={() => openConfirmModal({ type: 'decline' })}
+                    disabled={accepting || declining}
                     className="text-xs font-medium text-gray-600 border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
                   >
                     {declining ? 'Declining…' : 'Decline'}
@@ -339,6 +429,12 @@ export default function CreatorInquiriesPage() {
               )}
             </div>
           </div>
+          {actionError && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-600">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+              <p>{actionError}</p>
+            </div>
+          )}
         </div>
 
         {/* ── Body: chat + sidebar ── */}
@@ -536,22 +632,35 @@ export default function CreatorInquiriesPage() {
                   </p>
                 </>
               )}
+              {actionError && (
+                <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-600">
+                  <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                  <p>{actionError}</p>
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
-                  onClick={() => setConfirmModal(null)}
+                  onClick={() => {
+                    setActionError('')
+                    setConfirmModal(null)
+                  }}
+                  disabled={accepting || declining || decliningOffer}
                   className="flex-1 border border-gray-200 rounded-full py-2.5 text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   Go back
                 </button>
                 <button
                   onClick={confirmAction}
+                  disabled={accepting || declining || decliningOffer}
                   className={`flex-1 rounded-full py-2.5 text-sm font-medium transition-colors text-white ${
                     confirmModal.type === 'decline' || confirmModal.type === 'decline_offer'
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-[#6b1d2b] hover:bg-[#4e1520]'
-                  }`}
+                  } disabled:opacity-50`}
                 >
-                  {confirmModal.type === 'accept' ? 'Yes, accept' :
+                  {accepting ? 'Accepting…' :
+                   declining || decliningOffer ? 'Declining…' :
+                   confirmModal.type === 'accept' ? 'Yes, accept' :
                    confirmModal.type === 'decline' ? 'Yes, decline' :
                    confirmModal.type === 'accept_offer' ? 'Accept offer' :
                    'Decline offer'}

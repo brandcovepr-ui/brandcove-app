@@ -140,6 +140,7 @@ export default function AdminOnboardPage() {
   const [uploadError, setUploadError] = useState('')
   const [uploadFailures, setUploadFailures] = useState<string[]>([])
   const [portfolioLinks, setPortfolioLinks] = useState<PortfolioLink[]>([{ label: '', url: '' }])
+  const [portfolioUrl, setPortfolioUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // ── form state ──
@@ -193,12 +194,14 @@ export default function AdminOnboardPage() {
     if (!fullName.trim()) e.full_name = 'Required'
     if (!email.trim()) e.email = 'Required'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Invalid email'
-
+  
     if (role === 'creative') {
       if (!discipline) e.discipline = 'Required'
-      portfolioLinks.forEach((l, i) => {
-        if (l.url.trim() && !isValidUrl(l.url.trim())) e[`link_url_${i}`] = 'Enter a valid URL'
-      })
+      
+      //  REPLACE THE ARRAY LOOP WITH THIS:
+      if (portfolioUrl.trim() && !isValidUrl(portfolioUrl.trim())) {
+        e.portfolio_url = 'Enter a valid URL'
+      }
     } else {
       if (!companyName.trim()) e.company_name = 'Required'
       if (websiteUrl.trim() && !isValidUrl(websiteUrl.trim())) e.website_url = 'Enter a valid URL'
@@ -236,7 +239,7 @@ export default function AdminOnboardPage() {
             hourly_rate: monthlyRate ? Number(monthlyRate) : undefined,
             location: location.trim() || undefined,
             availability,
-            portfolio_links: cleanLinks,
+            portfolio_url: portfolioUrl.trim() || undefined,
           } : {
             company_name: companyName.trim(),
             industry,
@@ -314,6 +317,7 @@ export default function AdminOnboardPage() {
     setCompanyName(''); setIndustry([]); setWebsiteUrl(''); setCompanyStage('')
     setCompanyDescription(''); setCreativeTypesWanted([])
     setWorkSamples([]); setPortfolioLinks([{ label: '', url: '' }])
+    setPortfolioUrl('') // Reset to empty string
     setErrors({}); setSubmitError(''); setUploadFailures([]); setSuccess(null); setCopied(false)
   }
 
@@ -738,52 +742,20 @@ export default function AdminOnboardPage() {
             {/* Portfolio links */}
             <div>
               <p className="text-xs font-medium text-gray-700 mb-3">Portfolio Links <span className="text-gray-400 font-normal">(optional — Behance, Dribbble, Instagram, etc.)</span></p>
-              <div className="space-y-3">
-                {portfolioLinks.map((link, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      <div>
-                        <input
-                          value={link.label}
-                          onChange={e => updateLink(i, 'label', e.target.value)}
-                          placeholder="Label (e.g. Behance)"
-                          className={inputCls}
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="url"
-                          value={link.url}
-                          onChange={e => updateLink(i, 'url', e.target.value)}
-                          placeholder="https://"
-                          className={`${inputCls} ${errors[`link_url_${i}`] ? 'border-red-300' : ''}`}
-                        />
-                        {errors[`link_url_${i}`] && (
-                          <p className="text-xs text-red-500 mt-1">{errors[`link_url_${i}`]}</p>
-                        )}
-                      </div>
-                    </div>
-                    {portfolioLinks.length > 1 && (
-                      <button
-                        onClick={() => setPortfolioLinks(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-gray-400 hover:text-gray-700 mt-2.5 shrink-0"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {portfolioLinks.length < 5 && (
-                <button
-                  type="button"
-                  onClick={() => setPortfolioLinks(prev => [...prev, { label: '', url: '' }])}
-                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#6b1d2b] transition-colors mt-3"
-                >
-                  <Plus size={13} />
-                  Add another link
-                </button>
-              )}
+                <div className="mt-6">
+                  <Field label="Portfolio Website / Link" error={errors.portfolio_url}>
+                    <input
+                      type="url"
+                      value={portfolioUrl}
+                      onChange={e => setPortfolioUrl(e.target.value)}
+                      placeholder="https://behance.net/username or https://myportfolio.com"
+                      className={`${inputCls} ${errors.portfolio_url ? 'border-red-300' : ''}`}
+                    />
+                  </Field>
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Provide a primary destination link where founders can see the creative's comprehensive body of work.
+                  </p>
+                </div>
             </div>
           </div>
         )}

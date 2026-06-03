@@ -170,7 +170,7 @@ export default function Hero() {
             founder needs. Vetted talent. No noise. Just the right hire.
           </motion.p>
           <MotionLink
-            href="/login"
+            href="/signup"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}

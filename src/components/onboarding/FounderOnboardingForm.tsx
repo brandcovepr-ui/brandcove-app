@@ -106,7 +106,7 @@ export function FounderOnboardingForm() {
         website_url: step1Data.website_url || null,
         creative_types_wanted: selectedRoles,
         company_stage: (companyStage || null) as string | null,
-      } as any)
+      })
 
       if (upsertError) throw upsertError
 
@@ -165,7 +165,7 @@ export function FounderOnboardingForm() {
   const stepLabels = ['Your Company', 'Profile Photo', 'Company Stage', 'Roles You Need', 'Subscribe']
 
   return (
-    <div className="auth-bg min-h-screen overflow-y-auto w-full">
+    <div className="auth-bg min-h-dvh w-full overflow-y-auto !p-0 sm:!p-4">
       {cropSrc && (
         <AvatarCropModal
           imageSrc={cropSrc}
@@ -173,27 +173,26 @@ export function FounderOnboardingForm() {
           onCancel={() => setCropSrc(null)}
         />
       )}
-      <div className="w-full h-full max-h-[92vh] bg-white rounded-2xl border-2 border-white overflow-hidden shadow-xl flex flex-col font-poppins">
+      <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col overflow-hidden bg-white font-poppins shadow-xl sm:min-h-[calc(100dvh-2rem)] sm:max-h-[92dvh] sm:rounded-2xl sm:border-2 sm:border-white">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-3 border-b border-gray-50 shrink-0 bg-[#F6F4F3]">
-          <Image src="/BrandCovePr.png" alt="BrandCove" width={100} height={26} className="object-contain" />
-          <span className="text-xs text-gray-400 uppercase tracking-widest">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-50 bg-[#F6F4F3] px-4 py-3 sm:px-8">
+          <Image src="/BrandCovePr.png" alt="BrandCove" width={100} height={26} className="h-auto w-24 object-contain" />
+          <span className="min-w-0 text-right text-[10px] uppercase tracking-widest text-gray-400 sm:text-xs">
             Step {step} : {stepLabels[step - 1]}
           </span>
-          <span></span>
         </div>
 
         {/* Body */}
-        <div className="flex flex-row items-center justify-center  min-h-full">
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
 
           {/* Form side */}
-          <div className="w-1/2 overflow-y-auto px-10 py-8 flex ml-20  h-full flex-col  justify-center">
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-8 sm:py-8 lg:w-1/2 lg:justify-center lg:px-10">
 
             {/* Step 1: Company info */}
             {step === 1 && (
               <>
-                <h1 className="text-[28px] font-editorial font-thin text-gray mb-1">Tell us about your company</h1>
+                <h1 className="text-2xl sm:text-[28px] font-editorial font-thin text-gray mb-1 leading-tight">Tell us about your company</h1>
                 <p className="text-sm text-gray-500 mb-6">This helps top creatives understand who they&apos;ll be working with.</p>
                 <form onSubmit={handleSubmit(onStep1)} className="space-y-4">
                   <div>
@@ -235,7 +234,7 @@ export function FounderOnboardingForm() {
             {/* Step 2: Profile Photo */}
             {step === 2 && (
               <>
-                <h1 className="text-[28px] font-editorial font-thin text-gray mb-1">Add a profile photo</h1>
+                <h1 className="text-2xl sm:text-[28px] font-editorial font-thin text-gray mb-1 leading-tight">Add a profile photo</h1>
                 <p className="text-sm text-gray-500 mb-8">A photo helps creatives know who they&apos;re working with. You can skip this and add one later.</p>
 
                 <input
@@ -292,21 +291,21 @@ export function FounderOnboardingForm() {
             {/* Step 3: Company stage */}
             {step === 3 && (
               <>
-                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">What stage is your company in</h1>
+                <h1 className="text-2xl sm:text-[28px] font-editorial text-gray-900 mb-1 leading-tight">What stage is your company in</h1>
                 <p className="text-sm text-gray-500 mb-6">Help us tailor the experience to your current needs.</p>
                 <div className="space-y-2 mb-6">
                   {STAGES.map(stage => (
                     <button
                       key={stage}
                       onClick={() => setCompanyStage(stage)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-full border text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-full border text-left text-sm transition-colors ${
                         companyStage === stage
                           ? 'border-gray-900 bg-pink-50 font-medium'
                           : 'border-gray-200 hover:border-gray-400'
                       }`}
                     >
                       {stage}
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      <span className={`w-4 h-4 shrink-0 rounded-full border-2 flex items-center justify-center ${
                         companyStage === stage ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
                       }`}>
                         {companyStage === stage && <span className="w-2 h-2 rounded-full bg-white" />}
@@ -328,21 +327,21 @@ export function FounderOnboardingForm() {
             {/* Step 4: Roles */}
             {step === 4 && (
               <>
-                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">Which roles do you need right now?</h1>
+                <h1 className="text-2xl sm:text-[28px] font-editorial text-gray-900 mb-1 leading-tight">Which roles do you need right now?</h1>
                 <p className="text-sm text-gray-500 mb-6">Select the roles to filter your curated marketplace.</p>
                 <div className="space-y-2 mb-6">
                   {ROLES.map(role => (
                     <button
                       key={role}
                       onClick={() => toggleRole(role)}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-full border text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-full border text-left text-sm transition-colors ${
                         selectedRoles.includes(role)
                           ? 'border-gray-900 bg-pink-50 font-medium'
                           : 'border-gray-200 hover:border-gray-400'
                       }`}
                     >
                       {role}
-                      <span className={`w-4 h-4 rounded border flex items-center justify-center ${
+                      <span className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center ${
                         selectedRoles.includes(role) ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
                       }`}>
                         {selectedRoles.includes(role) && (
@@ -371,11 +370,11 @@ export function FounderOnboardingForm() {
             {/* Step 5: Payment */}
             {step === 5 && (
               <>
-                <h1 className="text-[28px] font-editorial text-gray-900 mb-1">You&apos;re almost in.</h1>
+                <h1 className="text-2xl sm:text-[28px] font-editorial text-gray-900 mb-1 leading-tight">You&apos;re almost in.</h1>
                 <p className="text-sm text-gray-500 mb-8">Get full access to BrandCove&apos;s curated network of top creatives. Cancel anytime.</p>
 
                 <div className="border border-gray-200 rounded-2xl p-6 mb-6">
-                  <div className="flex items-end justify-between mb-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-4">
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Founder Plan</p>
                       <p className="text-3xl font-editorial text-gray-900">₦3,000</p>
@@ -390,7 +389,7 @@ export function FounderOnboardingForm() {
                       'Shortlist & compare talent',
                     ].map(feat => (
                       <li key={feat} className="flex items-center gap-2">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
                           <circle cx="7" cy="7" r="7" fill="#111827"/>
                           <path d="M4 7L6 9.5L10 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
@@ -417,7 +416,7 @@ export function FounderOnboardingForm() {
           </div>
 
           {/* Mascot side */}
-          <div className="hidden md:flex w-1/2 items-center justify-center p-8  shrink-0">
+          <div className="hidden lg:flex w-1/2 items-center justify-center p-8 shrink-0">
             <Image
               src={
                 step === 1 ? '/OnboardingMascot.png'

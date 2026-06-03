@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supabase } from '@/lib/supabase/client'
 import { useUser } from '@/lib/hooks/useUser'
+import type { Json } from '@/lib/supabase/database.types'
 import { Upload, X, ImageIcon, FileText, Film, Plus, Link as LinkIcon, Camera, UserCircle2 } from 'lucide-react'
 import Image from 'next/image'
 import { AvatarCropModal } from '@/components/shared/AvatarCropModal'
@@ -247,7 +248,9 @@ export function CreativeOnboardingForm() {
         }
       }
 
-      const cleanLinks = portfolioLinks.filter(l => l.label.trim() && l.url.trim())
+      const cleanLinks: Json = portfolioLinks
+        .filter(l => l.label.trim() && l.url.trim())
+        .map(l => ({ label: l.label.trim(), url: l.url.trim() }))
 
       const { error: profileError } = await supabase.from('creative_profiles').upsert({
         id: profile.id,
@@ -257,7 +260,7 @@ export function CreativeOnboardingForm() {
         location: step2Data.location || null,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
         availability,
-        portfolio_links: cleanLinks as any,
+        portfolio_links: cleanLinks,
       })
 
       if (profileError) throw new Error('Failed to save your profile details. Please try again.')
@@ -318,7 +321,7 @@ export function CreativeOnboardingForm() {
   const stepLabels = ['Your Role', 'Profile Photo', 'Bio & Experience', 'Show Your Work', 'Portfolio Links', 'Your Rate']
 
   return (
-    <div className="auth-bg h-screen w-full">
+    <div className="auth-bg min-h-dvh w-full overflow-y-auto !p-0 sm:!p-4">
       {cropSrc && (
         <AvatarCropModal
           imageSrc={cropSrc}
@@ -326,27 +329,26 @@ export function CreativeOnboardingForm() {
           onCancel={() => setCropSrc(null)}
         />
       )}
-      <div className="w-full h-full max-h-[92vh] bg-white rounded-2xl border-2 border-white overflow-hidden shadow-xl flex flex-col font-poppins">
+      <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col overflow-hidden bg-white font-poppins shadow-xl sm:min-h-[calc(100dvh-2rem)] sm:max-h-[92dvh] sm:rounded-2xl sm:border-2 sm:border-white">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-3 border-b border-gray-50 shrink-0 bg-[#F6F4F3]">
-          <span className="text-xl font-regular text-gray-900 font-editorial tracking-tight">BrandCove</span>
-          <span className="text-xs text-gray-400 uppercase tracking-widest">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-50 bg-[#F6F4F3] px-4 py-3 sm:px-8">
+          <span className="shrink-0 text-lg font-regular text-gray-900 font-editorial tracking-tight sm:text-xl">BrandCove</span>
+          <span className="min-w-0 text-right text-[10px] text-gray-400 uppercase tracking-widest sm:text-xs">
             Step {step} : {stepLabels[step - 1]}
           </span>
-          <span></span>
         </div>
 
         {/* Body */}
-        <div className="flex flex-row min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
 
           {/* Form side */}
-          <div className="w-1/2 overflow-y-auto px-10 py-8 flex flex-col justify-center">
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-8 sm:py-8 lg:w-1/2 lg:justify-center lg:px-10">
 
             {/* Step 1: Primary Role */}
             {step === 1 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">What is your primary role?</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">What is your primary role?</h1>
                 <p className="text-sm text-gray-500 mb-6">Choose the core competency you want to be hired for. You can highlight additional skills in the next step.</p>
 
                 <div className="space-y-2 mb-5">
@@ -354,7 +356,7 @@ export function CreativeOnboardingForm() {
                     <button
                       key={d}
                       onClick={() => { setDiscipline(d); setSelectedSkills([]) }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-colors ${
+                      className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg border text-left text-sm transition-colors ${
                         discipline === d
                           ? 'border-gray-900 bg-pink-50 font-medium'
                           : 'border-gray-200 hover:border-gray-400'
@@ -405,7 +407,7 @@ export function CreativeOnboardingForm() {
             {/* Step 2: Profile Photo */}
             {step === 2 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Add a profile photo</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">Add a profile photo</h1>
                 <p className="text-sm text-gray-500 mb-8">A clear photo helps founders put a face to your work. You can skip this and add one later.</p>
 
                 <input
@@ -463,7 +465,7 @@ export function CreativeOnboardingForm() {
             {/* Step 3: Bio & Experience */}
             {step === 3 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Your bio &amp; experience</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">Your bio &amp; experience</h1>
                 <p className="text-sm text-gray-500 mb-6">Tell founders what you specialize in and the value you bring to a team.</p>
 
                 <form onSubmit={step2Form.handleSubmit(onStep2Submit)} className="space-y-4">
@@ -520,7 +522,7 @@ export function CreativeOnboardingForm() {
             {/* Step 4: Show Your Work */}
             {step === 4 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Show your work</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">Show your work</h1>
                 <p className="text-sm text-gray-500 mb-6">Upload 1 to 6 items that showcase your best capabilities. This is the first
 thing founders will look at.</p>
 
@@ -543,7 +545,7 @@ thing founders will look at.</p>
                   <p className="text-sm text-gray-500">
                     {uploading ? 'Uploading…' : uploads.length >= MAX_FILES ? 'Maximum files reached' : 'Click to upload files'}
                   </p>
-                  <p className="text-xs text-gray-400">Images, PDFs, Videos · max {MAX_FILE_SIZE_MB} MB each · up to {MAX_FILES} files</p>
+                  <p className="px-4 text-center text-xs text-gray-400">Images, PDFs, Videos · max {MAX_FILE_SIZE_MB} MB each · up to {MAX_FILES} files</p>
                 </button>
 
                 {uploadError && (
@@ -585,7 +587,7 @@ thing founders will look at.</p>
             {/* Step 5: Portfolio Links */}
             {step === 5 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Your portfolio links</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">Your portfolio links</h1>
                 <p className="text-sm text-gray-500 mb-6">
                   Add links to your online work — portfolio site, Behance, Dribbble, GitHub, Instagram, YouTube, or anywhere else your best work lives. Add at least 1 and up to 5 links.
                 </p>
@@ -609,7 +611,7 @@ thing founders will look at.</p>
                         )}
                       </div>
 
-                      <div>
+                      <div className="min-w-0">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Label</label>
                         <input
                           type="text"
@@ -671,7 +673,7 @@ thing founders will look at.</p>
             {/* Step 6: Rate & Availability */}
             {step === 6 && (
               <>
-                <h1 className="text-3xl font-editorial text-gray-900 mb-1">Set your rate &amp; availability</h1>
+                <h1 className="text-2xl sm:text-3xl font-editorial text-gray-900 mb-1 leading-tight">Set your rate &amp; availability</h1>
                 <p className="text-sm text-gray-500 mb-6">Founders will see this on your profile when browsing.</p>
 
                 <div className="space-y-5">
@@ -736,7 +738,7 @@ thing founders will look at.</p>
           </div>
 
           {/* Mascot side */}
-          <div className="hidden md:flex w-1/2 items-center justify-center p-8 border-l border-gray-50 shrink-0">
+          <div className="hidden lg:flex w-1/2 items-center justify-center p-8 border-l border-gray-50 shrink-0">
             <Image
               src={
                 step === 1 ? '/OnboardingMascot.png'

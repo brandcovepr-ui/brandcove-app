@@ -21,7 +21,7 @@ export default function CTABanner() {
             <span className="font-script italic text-white">dream hire</span> with us.
           </h2>
           <MotionLink
-            href="/login"
+            href="/signup"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             className="inline-flex bg-maroon text-white font-sans font-medium px-8 py-3.5 rounded-full hover:bg-maroon/90 transition-colors text-sm"

@@ -26,10 +26,10 @@ export default function ContactPage() {
                 <h2 className="font-script text-xl text-gray-900 mb-3">Email</h2>
                 <p className="font-sans text-sm text-gray-500 mb-1">Send an email:</p>
                 <a
-                  href="mailto:hello@brandcovepr.com"
+                  href="mailto:brandcovepr@gmail.com"
                   className="font-sans text-sm text-gray-900 hover:underline"
                 >
-                  hello@brandcovepr.com
+                  brandcovepr@gmail.com
                 </a>
               </div>
 
