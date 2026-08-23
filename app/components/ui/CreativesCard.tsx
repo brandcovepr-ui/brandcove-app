@@ -1,0 +1,121 @@
+'use client'
+
+import Link from 'next/link'
+import Image from 'next/image'
+import { Bookmark } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { toggleShortlistAction } from '@/app/actions/founder'
+
+
+export interface CreativeCardProps {
+  creative: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+    bio?: string | null
+    discipline?: string | null
+    rate?: number | null
+  }
+  initialShortlisted?: boolean
+}
+
+export function CreativeCard({
+  creative,
+  initialShortlisted = false,
+}: CreativeCardProps) {
+  const [shortlisted, setShortlisted] = useState(initialShortlisted)
+  const [isPending, startTransition] = useTransition()
+
+  function handleToggleShortlist(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const nextState = !shortlisted
+    setShortlisted(nextState) // Optimistic update
+
+    startTransition(async () => {
+      try {
+        await toggleShortlistAction(creative.id, shortlisted)
+      } catch (err) {
+        setShortlisted(shortlisted) // Revert on failure
+      }
+    })
+  }
+
+  function abbrevName(name: string | null) {
+    if (!name) return '—'
+    const parts = name.trim().split(' ')
+    if (parts.length === 1) return parts[0]
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow flex flex-col h-full">
+      {/* Top row: avatar + bookmark */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="relative w-20 h-20 rounded-xl bg-[#d4a0a8] flex items-center justify-center text-white text-2xl font-semibold shrink-0 overflow-hidden">
+          {creative.avatar_url ? (
+            <Image
+              src={creative.avatar_url}
+              alt={creative.full_name || 'Creative avatar'}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          ) : (
+            creative.full_name?.[0]?.toUpperCase() || 'C'
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={handleToggleShortlist}
+          disabled={isPending}
+          className="text-gray-300 hover:text-[#6b1d2b] transition-colors mt-1 p-1 disabled:opacity-50"
+          aria-label={shortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
+        >
+          <Bookmark
+            size={18}
+            className={
+              shortlisted ? 'text-[#6b1d2b] fill-[#6b1d2b]' : 'text-gray-300'
+            }
+          />
+        </button>
+      </div>
+
+      {/* Name + discipline pill */}
+      <p className="text-sm font-bold text-gray-900 mb-1.5">
+        {abbrevName(creative.full_name)}
+      </p>
+      {creative.discipline && (
+        <span className="inline-block self-start text-[11px] font-medium text-[#6b1d2b] bg-[#f5eeee] px-2.5 py-0.5 rounded-full mb-3">
+          {creative.discipline}
+        </span>
+      )}
+
+      {/* Bio */}
+      <p className="text-xs text-gray-500 line-clamp-2 mb-4 flex-1 leading-relaxed">
+        {creative.bio || 'Creative professional available for hire.'}
+      </p>
+
+      <hr className="border-gray-100 mb-4" />
+
+      {/* Rate + View Profile */}
+      <div className="flex items-center justify-between gap-3 mt-auto">
+        <div>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">
+            Rate
+          </p>
+          <p className="text-sm font-bold text-gray-900">
+            {creative.rate ? `₦${(creative.rate / 1000).toFixed(0)}k/mo` : 'TBD'}
+          </p>
+        </div>
+        <Link
+          href={`/dashboard/founder/browse/${creative.id}`}
+          className="bg-[#6b1d2b] text-white rounded-lg px-4 py-2 text-xs font-medium hover:bg-[#4e1520] transition-colors whitespace-nowrap"
+        >
+          View Profile
+        </Link>
+      </div>
+    </div>
+  )
+}
