@@ -110,8 +110,8 @@ export async function notifyHire(inquiryId: string, founderId: string) {
   const founderName = emailText(names.get(inquiry.founder_id) ?? 'The founder', 160)
   const creativeName = emailText(names.get(inquiry.creative_id) ?? 'The creative', 160)
   await Promise.all([
-    send({ from: FROM, to: founderEmail, subject: hireConfirmedFounderSubject(creativeName), html: hireFounderHtml({ founderName: firstName(founderName), creativeName, creativeEmail: emailAddress(creativeEmail), projectDescription: emailText(inquiry.project_description, 1_500), ctaUrl: `${appUrl()}/dashboard/founder/messages` }) }, `hire-founder/${inquiryId}`),
-    send({ from: FROM, to: creativeEmail, subject: hireConfirmedCreativeSubject(founderName), html: hireCreativeHtml({ creativeName: firstName(creativeName), founderName, founderEmail: emailAddress(founderEmail), projectDescription: emailText(inquiry.project_description, 1_500), ctaUrl: `${appUrl()}/dashboard/creator/messages` }) }, `hire-creative/${inquiryId}`),
+    send({ from: FROM, to: founderEmail, subject: hireConfirmedFounderSubject(creativeName), html: hireFounderHtml({ founderName: firstName(founderName), creativeName, creativeEmail: emailAddress(creativeEmail), projectDescription: emailText(inquiry.project_description, 1_500), ctaUrl: `${appUrl()}/dashboard/founder/inquiries` }) }, `hire-founder/${inquiryId}`),
+    send({ from: FROM, to: creativeEmail, subject: hireConfirmedCreativeSubject(founderName), html: hireCreativeHtml({ creativeName: firstName(creativeName), founderName, founderEmail: emailAddress(founderEmail), projectDescription: emailText(inquiry.project_description, 1_500), ctaUrl: `${appUrl()}/dashboard/creator/inquiries` }) }, `hire-creative/${inquiryId}`),
   ])
 }
 

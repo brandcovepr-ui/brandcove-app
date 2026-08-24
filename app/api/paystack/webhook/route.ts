@@ -14,7 +14,7 @@
  * Required env vars:
  *   PAYSTACK_SECRET_KEY
  *   NEXT_PUBLIC_SUPABASE_URL
- *   NEXT_PUBLIC_SUPABASE_SECRET_KEY
+ *   SUPABASE_SECRET_KEY
  *   NEXT_PUBLIC_PAYSTACK_FOUNDER_PLAN_CODE
  *   NEXT_PUBLIC_PAYSTACK_CREATIVE_PLAN_CODE
  *
@@ -29,7 +29,7 @@ import { verifyWebhookSignature, resolvePlanName } from '@/lib/paystack/server'
 function supabaseAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY!
+    process.env.SUPABASE_SECRET_KEY!
   )
 }
 

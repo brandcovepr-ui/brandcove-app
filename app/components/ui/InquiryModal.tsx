@@ -49,7 +49,7 @@ export function SendInquiryModal({ creativeId, creativeName, onClose }: Props) {
           budget: data.budget,
         })
         onClose()
-        router.push('/dashboard/founder/messages?sent=1')
+        router.push('/dashboard/founder/inquiries?sent=1')
       } catch (err: any) {
         setServerError(err.message || 'Something went wrong. Please try again.')
       }

@@ -10,7 +10,7 @@ import {
 function getSupabaseAdmin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_SECRET_KEY!
+    process.env.SUPABASE_SECRET_KEY!
   )
 }
 
