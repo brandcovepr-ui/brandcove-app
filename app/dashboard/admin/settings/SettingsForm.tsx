@@ -145,27 +145,10 @@ export function SettingsForm({
     showSaved()
   }
 
-  async function cancelSubscription() {
-    if (!profile) return
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    const token = session?.access_token ?? null
-    if (!token) return
-
-    await fetch('/api/paystack/cancel', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    const updated = { ...profile, subscription_status: 'inactive' }
-    setProfileState(updated)
-    setCancelOpen(false)
-  }
-
+ 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'profile', label: 'Edit Profile' },
-    { id: 'subscription', label: 'Subscription' },
+   
     { id: 'password', label: 'Change Password' },
   ]
 
@@ -316,38 +299,7 @@ export function SettingsForm({
             </form>
           )}
 
-          {tab === 'subscription' && (
-            <div className="space-y-5">
-              <div className="rounded-xl border border-gray-200 p-5">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Current Plan
-                </p>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-base font-bold text-gray-900">Founder Plan</p>
-                    <p className="mt-1 font-bold text-2xl text-gray-900">
-                      ₦3,000 <span className="text-sm font-normal text-gray-400">/month</span>
-                    </p>
-                  </div>
-                  {profile?.subscription_expires_at && (
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400">Next billing</p>
-                      <p className="text-sm font-medium text-gray-700">
-                        {format(new Date(profile.subscription_expires_at), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setCancelOpen(true)}
-                  className="mt-4 text-xs font-medium text-red-500 hover:text-red-700"
-                >
-                  Cancel subscription
-                </button>
-              </div>
-            </div>
-          )}
-
+    
           {tab === 'password' && (
             <form onSubmit={passwordForm.handleSubmit(onSavePassword)} className="space-y-4">
               <div>
