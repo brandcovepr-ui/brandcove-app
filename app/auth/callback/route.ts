@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server-client'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next')
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=Missing+auth+code`)
@@ -12,14 +12,14 @@ export async function GET(request: Request) {
 
   const supabase = await createSupabaseServerClient()
 
-  // 1. Exchange OAuth / Magic Link auth code for a server session
+  // 1. Exchange Auth / Password Reset / OAuth code for a server session
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=Authentication+failed`)
   }
 
-  // 2. Fetch active session user
+  // 2. Fetch authenticated user details
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -28,7 +28,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login`)
   }
 
-  // 3. Retrieve user profile state to determine destination
+  // 3. Priority Redirect: Explicit 'next' parameter (e.g., /reset-password)
+  if (next) {
+    return NextResponse.redirect(`${origin}${next}`)
+  }
+
+  // 4. Retrieve user profile state to determine destination
   const { data: profile } = await supabase
     .from('profiles')
     .select('role, onboarding_complete, review_status, subscription_status')

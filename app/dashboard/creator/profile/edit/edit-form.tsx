@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useRef, useCallback, useActionState } from 'react'
-import Link from 'next/link'
-import { UploadCloud, X, Eye } from 'lucide-react'
-import { updateCreatorProfile, uploadWorkSampleAction, deleteWorkSampleAction, ProfileActionResult } from '@/app/actions/creator-profile'
+import { UploadCloud, X } from 'lucide-react'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { updateCreatorProfile, ProfileActionResult } from '@/app/actions/creator-profile'
 import type { CreativeProfile, WorkSample, Profile } from '@/lib/types'
 
 const DISCIPLINES = [
@@ -37,11 +37,15 @@ export default function CreatorProfileEditForm({
   const [discipline, setDiscipline] = useState(initialCreativeProfile?.discipline || '')
   const [skills, setSkills] = useState<string[]>(initialCreativeProfile?.skills || [])
   const [skillInput, setSkillInput] = useState('')
-  
+
+  // Local state for interactive client-side management of work samples
+  const [workSamples, setWorkSamples] = useState<WorkSample[]>(initialWorkSamples)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const supabase = getSupabaseBrowserClient()
 
   function addSkill(raw: string) {
     const tag = raw.trim()
@@ -60,7 +64,7 @@ export default function CreatorProfileEditForm({
 
   async function uploadFiles(files: File[]) {
     setUploadError('')
-    const remaining = MAX_FILES - initialWorkSamples.length
+    const remaining = MAX_FILES - workSamples.length
 
     if (remaining <= 0) {
       setUploadError(`Maximum of ${MAX_FILES} files reached.`)
@@ -78,10 +82,44 @@ export default function CreatorProfileEditForm({
     const failed: string[] = []
 
     for (const file of batch) {
-      const formData = new FormData()
-      formData.append('file', file)
-      const res = await uploadWorkSampleAction(formData)
-      if (res.error) failed.push(file.name)
+      try {
+        const fileExt = file.name.split('.').pop()
+        const filePath = `${initialProfile?.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+        // 1. Upload file directly to Supabase storage bucket from the browser
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('work_samples')
+          .upload(filePath, file, { cacheControl: '3600', upsert: false })
+
+        if (storageError) throw storageError
+
+        // 2. Get Public URL
+        const { data: publicUrlData } = supabase.storage
+          .from('work_samples')
+          .getPublicUrl(storageData.path)
+
+        const fileType = file.type.startsWith('image/') ? 'image' : 'document'
+
+        // 3. Insert record into database table
+        const { data: sampleRecord, error: dbError } = await supabase
+          .from('work_samples')
+          .insert({
+            creative_id: initialProfile?.id,
+            url: publicUrlData.publicUrl,
+            file_type: fileType,
+            title: file.name,
+          })
+          .select()
+          .single()
+
+        if (dbError) throw dbError
+
+        // 4. Update UI local state immediately
+        setWorkSamples((prev) => [...prev, sampleRecord])
+      } catch (err) {
+        console.error('Client upload error:', err)
+        failed.push(file.name)
+      }
     }
 
     setUploading(false)
@@ -91,15 +129,26 @@ export default function CreatorProfileEditForm({
     }
   }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length) uploadFiles(files)
-  }, [initialWorkSamples?.length])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragging(false)
+      const files = Array.from(e.dataTransfer.files)
+      if (files.length) uploadFiles(files)
+    },
+    [workSamples.length]
+  )
 
   async function handleDeleteSample(sampleId: string) {
-    await deleteWorkSampleAction(sampleId)
+    // 1. Optimistically update local UI
+    setWorkSamples((prev) => prev.filter((s) => s.id !== sampleId))
+
+    // 2. Delete from database
+    const { error } = await supabase.from('work_samples').delete().eq('id', sampleId)
+    if (error) {
+      console.error('Failed to delete sample:', error)
+      // Rollback on failure if necessary
+    }
   }
 
   return (
@@ -252,7 +301,7 @@ export default function CreatorProfileEditForm({
             className={`border-2 border-dashed rounded-xl py-10 flex flex-col items-center gap-2 cursor-pointer transition-colors ${
               dragging
                 ? 'border-[#6b1d2b] bg-[#fdf4f5]'
-                : initialWorkSamples.length >= MAX_FILES
+                : workSamples.length >= MAX_FILES
                 ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                 : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
             }`}
@@ -261,7 +310,7 @@ export default function CreatorProfileEditForm({
             <p className="text-sm text-gray-600 font-medium">
               {uploading
                 ? 'Uploading…'
-                : initialWorkSamples.length >= MAX_FILES
+                : workSamples.length >= MAX_FILES
                 ? 'Maximum files reached'
                 : 'Click to upload or drag and drop'}
             </p>
@@ -270,13 +319,13 @@ export default function CreatorProfileEditForm({
           {uploadError && <p className="text-xs text-red-500 mt-2">{uploadError}</p>}
         </div>
 
-        {initialWorkSamples.length > 0 && (
+        {workSamples.length > 0 && (
           <div>
             <p className="text-xs font-medium text-gray-700 mb-3">
-              Uploaded files ({initialWorkSamples.length}/{MAX_FILES})
+              Uploaded files ({workSamples.length}/{MAX_FILES})
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {initialWorkSamples.map((sample) => (
+              {workSamples.map((sample) => (
                 <div key={sample.id} className="relative group rounded-xl overflow-hidden border border-gray-100 aspect-video">
                   {sample.file_type === 'image' ? (
                     <img src={sample.url} alt={sample.title || ''} className="w-full h-full object-cover" />

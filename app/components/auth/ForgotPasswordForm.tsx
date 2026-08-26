@@ -1,34 +1,49 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Mail, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { requestPasswordReset, FormState } from '@/app/actions/auth'
+import { createBrowserClient } from '@supabase/ssr'
 import { AuthCard } from './AuthCard'
 
-const initialState: FormState = {
-  success: false,
-  error: undefined,
-  email: '',
-  resentCount: 0,
-}
-
 export function ForgotPasswordForm() {
-  const [resetKey, setResetKey] = useState(0)
+  const [email, setEmail] = useState('')
+  const [isPending, setIsPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isSent, setIsSent] = useState(false)
+  const [resentCount, setResentCount] = useState(0)
 
-  return (
-    <ForgotPasswordFormInternal
-      key={resetKey}
-      onReset={() => setResetKey((k) => k + 1)}
-    />
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   )
-}
 
-function ForgotPasswordFormInternal({ onReset }: { onReset: () => void }) {
-  const [state, formAction, isPending] = useActionState(requestPasswordReset, initialState)
-  const [email, setEmail] = useState(state.email || '')
+  const handleSendResetLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsPending(true)
+    setError(null)
 
-  if (state.success) {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    })
+
+    setIsPending(false)
+
+    if (resetError) {
+      setError(resetError.message)
+      return
+    }
+
+    setIsSent(true)
+    setResentCount((prev) => prev + 1)
+  }
+
+  const handleReEnterEmail = () => {
+    setIsSent(false)
+    setError(null)
+  }
+
+  if (isSent) {
     return (
       <AuthCard mascotSrc="/SubscribeMascot.png">
         <div className="w-full">
@@ -36,39 +51,37 @@ function ForgotPasswordFormInternal({ onReset }: { onReset: () => void }) {
             Check your inbox
           </h1>
           <p className="text-sm text-gray-500 mb-7 font-poppins">
-            We sent a secure link to <strong>{state.email}</strong>. Open it to reset your password and continue into your founder onboarding flow.
+            We sent a secure link to <strong>{email}</strong>. Open it to reset your password and continue into your founder onboarding flow.
           </p>
 
           <div className="border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between mb-4">
             <span className="text-sm text-gray-700 font-poppins truncate max-w-[200px]">
-              {state.email}
+              {email}
             </span>
             <span className="text-green-500 flex items-center gap-1 text-xs font-poppins">
               <CheckCircle2 size={16} /> Sent
             </span>
           </div>
 
-          {state.resentCount && state.resentCount > 1 ? (
+          {resentCount > 1 && (
             <div className="mb-4 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg p-2.5 text-center font-poppins">
               Reset link resent successfully!
             </div>
-          ) : null}
-
-          <form action={formAction}>
-            <input type="hidden" name="email" value={state.email} />
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors mb-3 font-poppins disabled:opacity-60"
-            >
-              {isPending ? 'Sending…' : "Didn't see it? Resend Email"}
-            </button>
-          </form>
+          )}
 
           <button
             type="button"
-            onClick={onReset}
-            className="w-full text-xs text-gray-500 hover:text-gray-800 font-poppins text-center py-1 underline"
+            onClick={handleSendResetLink}
+            disabled={isPending}
+            className="w-full bg-gray-900 text-white rounded-full py-3 text-sm font-medium hover:bg-gray-800 transition-colors mb-3 font-poppins disabled:opacity-60"
+          >
+            {isPending ? 'Sending…' : "Didn't see it? Resend Email"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleReEnterEmail}
+            className="w-full text-xs text-gray-500 hover:text-gray-800 font-poppins text-center py-1 underline block"
           >
             Entered the wrong email? Re-enter email
           </button>
@@ -93,14 +106,14 @@ function ForgotPasswordFormInternal({ onReset }: { onReset: () => void }) {
           Enter the email linked to your account and we&apos;ll send a reset link so you can continue your setup.
         </p>
 
-        {state.error && (
+        {error && (
           <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-xs text-red-600 font-poppins">
             <AlertCircle size={14} className="mt-0.5 shrink-0" />
-            <p>{state.error}</p>
+            <p>{error}</p>
           </div>
         )}
 
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={handleSendResetLink} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 font-poppins">
               Email Address
@@ -114,7 +127,7 @@ function ForgotPasswordFormInternal({ onReset }: { onReset: () => void }) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. founder@brandcove.com"
                 className={`w-full border rounded-lg px-3 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 pr-10 font-poppins ${
-                  state.error
+                  error
                     ? 'border-red-400 bg-red-50 focus:ring-red-400'
                     : 'border-gray-300 focus:ring-gray-900'
                 }`}
